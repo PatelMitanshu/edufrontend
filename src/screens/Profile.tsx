@@ -9,11 +9,15 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Image,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/themedStyles';
 import { profileService, TeacherProfile, ProfileUpdateData } from '../services/profileService';
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType } from 'react-native-image-picker';
 
 function ProfileScreen() {
   const { theme } = useTheme();
@@ -45,6 +49,7 @@ function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -73,6 +78,7 @@ function ProfileScreen() {
             phone: teacher.phone || teacher.phoneNumber || '',
             school: teacher.school || teacher.institution || '',
             subject: teacher.subject || teacher.subjects?.[0] || '',
+            profilePicture: teacher.profilePicture || undefined,
             role: teacher.role || 'teacher',
             isActive: teacher.isActive !== undefined ? teacher.isActive : true,
             createdAt: teacher.createdAt || new Date().toISOString(),
@@ -138,6 +144,171 @@ function ProfileScreen() {
     setProfile(prev => {
       return { ...prev, [field]: value };
     });
+  };
+
+  const showImagePicker = () => {
+    const options = [
+      'Take Photo',
+      'Choose from Library',
+      'Remove Photo',
+      'Cancel'
+    ];
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: 3,
+          destructiveButtonIndex: 2,
+        },
+        (buttonIndex) => {
+          switch (buttonIndex) {
+            case 0:
+              openCamera();
+              break;
+            case 1:
+              openImageLibrary();
+              break;
+            case 2:
+              removeProfilePicture();
+              break;
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        'Profile Picture',
+        'Select an option',
+        [
+          { text: 'Take Photo', onPress: openCamera },
+          { text: 'Choose from Library', onPress: openImageLibrary },
+          { text: 'Remove Photo', onPress: removeProfilePicture, style: 'destructive' },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+    }
+  };
+
+  const openCamera = () => {
+    launchCamera(
+      {
+        mediaType: 'photo' as MediaType,
+        quality: 0.7,
+        maxWidth: 300,
+        maxHeight: 300,
+      },
+      handleImageResponse
+    );
+  };
+
+  const openImageLibrary = () => {
+    launchImageLibrary(
+      {
+        mediaType: 'photo' as MediaType,
+        quality: 0.7,
+        maxWidth: 300,
+        maxHeight: 300,
+      },
+      handleImageResponse
+    );
+  };
+
+  const handleImageResponse = (response: ImagePickerResponse) => {
+    if (response.didCancel || response.errorMessage) {
+      return;
+    }
+
+    if (response.assets && response.assets[0]) {
+      const imageUri = response.assets[0].uri;
+      if (imageUri) {
+        uploadProfilePicture(imageUri);
+      }
+    }
+  };
+
+  // Helper function to broadcast profile picture changes
+  const broadcastProfileChange = async () => {
+    try {
+      // Force a small delay to ensure AsyncStorage is updated
+      setTimeout(() => {
+        // Trigger a profile update flag that other screens can check
+        AsyncStorage.setItem('profileUpdated', Date.now().toString());
+      }, 100);
+    } catch (error) {
+      console.log('Failed to broadcast profile change:', error);
+    }
+  };
+
+  const uploadProfilePicture = async (imageUri: string) => {
+    try {
+      setUploadingImage(true);
+      const imageUrl = await profileService.uploadProfilePicture(imageUri);
+      setProfile(prev => ({
+        ...prev,
+        profilePicture: imageUrl
+      }));
+      setOriginalProfile(prev => ({
+        ...prev,
+        profilePicture: imageUrl
+      }));
+      
+      // Update AsyncStorage with the new profile picture
+      try {
+        const teacherData = await AsyncStorage.getItem('teacherData');
+        if (teacherData) {
+          const teacher = JSON.parse(teacherData);
+          teacher.profilePicture = imageUrl;
+          await AsyncStorage.setItem('teacherData', JSON.stringify(teacher));
+        }
+      } catch (storageError) {
+        console.log('Failed to update AsyncStorage:', storageError);
+      }
+      
+      // Broadcast the change to other screens
+      broadcastProfileChange();
+      
+      Alert.alert('Success', 'Profile picture updated successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeProfilePicture = async () => {
+    try {
+      setUploadingImage(true);
+      await profileService.deleteProfilePicture();
+      setProfile(prev => ({
+        ...prev,
+        profilePicture: undefined
+      }));
+      setOriginalProfile(prev => ({
+        ...prev,
+        profilePicture: undefined
+      }));
+      
+      // Update AsyncStorage to remove the profile picture
+      try {
+        const teacherData = await AsyncStorage.getItem('teacherData');
+        if (teacherData) {
+          const teacher = JSON.parse(teacherData);
+          delete teacher.profilePicture;
+          await AsyncStorage.setItem('teacherData', JSON.stringify(teacher));
+        }
+      } catch (storageError) {
+        console.log('Failed to update AsyncStorage:', storageError);
+      }
+      
+      // Broadcast the change to other screens
+      broadcastProfileChange();
+      
+      Alert.alert('Success', 'Profile picture removed successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove profile picture. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   if (loading) {
@@ -229,15 +400,72 @@ function ProfileScreen() {
       <ScrollView style={[tw['flex-1']]} showsVerticalScrollIndicator={false}>
         {/* Profile Avatar */}
         <View style={[tw['items-center'], tw['py-6'], tw['bg-surface'], tw['mb-2']]}>
-          <View style={[tw['w-24'], tw['h-24'], tw['bg-gradient-blue'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['shadow-xl']]}>
-            <Text style={[tw['text-4xl'], tw['text-white']]}>👨‍🏫</Text>
-          </View>
-          <Text style={[tw['text-xl'], tw['font-bold'], tw['text-primary'], tw['mt-3']]}>
+          <TouchableOpacity
+            onPress={showImagePicker}
+            style={[tw['relative'], tw['mb-3']]}
+            activeOpacity={0.7}
+          >
+            {profile && profile.profilePicture ? (
+              <Image
+                source={{ uri: profile.profilePicture }}
+                style={[tw['w-24'], tw['h-24'], tw['rounded-full'], tw['shadow-xl']]}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[tw['w-24'], tw['h-24'], tw['bg-gradient-blue'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['shadow-xl']]}>
+                <Text style={[tw['text-4xl'], tw['text-white']]}>👨‍🏫</Text>
+              </View>
+            )}
+            
+            {uploadingImage && (
+              <View style={[
+                tw['absolute'], 
+                tw['w-24'], 
+                tw['h-24'], 
+                tw['rounded-full'], 
+                tw['items-center'], 
+                tw['justify-center'], 
+                { backgroundColor: 'rgba(0,0,0,0.5)' }
+              ]}>
+                <ActivityIndicator color="white" size="small" />
+              </View>
+            )}
+            
+            <View style={[
+              tw['absolute'],
+              tw['w-8'], 
+              tw['h-8'], 
+              tw['bg-primary'], 
+              tw['rounded-full'], 
+              tw['items-center'], 
+              tw['justify-center'], 
+              tw['shadow-lg'],
+              tw['border-2'],
+              { 
+                bottom: 0, 
+                right: 0, 
+                borderColor: theme.colors.surface 
+              }
+            ]}>
+              <Text style={[tw['text-white'], tw['text-sm'], tw['font-bold']]}>📷</Text>
+            </View>
+          </TouchableOpacity>
+          
+          <Text style={[tw['text-xl'], tw['font-bold'], tw['text-primary'], tw['mb-1']]}>
             {(profile && profile.name) || 'Teacher'}
           </Text>
-          <Text style={[tw['text-sm'], tw['text-secondary'], tw['capitalize']]}>
+          <Text style={[tw['text-sm'], tw['text-secondary'], tw['capitalize'], tw['mb-2']]}>
             {(profile && profile.role) || 'teacher'}
           </Text>
+          <TouchableOpacity
+            onPress={showImagePicker}
+            style={[tw['bg-primary-light'], tw['px-4'], tw['py-2'], tw['rounded-full']]}
+            activeOpacity={0.7}
+          >
+            <Text style={[tw['text-primary'], tw['text-sm'], tw['font-medium']]}>
+              {profile && profile.profilePicture ? 'Change Photo' : 'Add Photo'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Profile Information */}

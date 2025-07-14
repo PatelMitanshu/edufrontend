@@ -158,7 +158,7 @@ function AddStudent({ route, navigation }: Props) {
                       color: theme.colors.text
                     }
                   ]}
-                  placeholder="YYYY-MM-DD (e.g., 2010-05-15) - optional"
+                  placeholder="YYYY-MM-DD (e.g., 2010-05-15)"
                   placeholderTextColor={theme.colors.textMuted}
                   value={dateOfBirth}
                   onChangeText={setDateOfBirth}

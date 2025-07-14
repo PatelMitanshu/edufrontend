@@ -8,6 +8,7 @@ interface TeacherProfile {
   phone: string;
   school: string;
   subject: string;
+  profilePicture?: string;
   role: string;
   isActive: boolean;
   createdAt: string;
@@ -70,6 +71,43 @@ class ProfileService {
       await AsyncStorage.setItem('teacherData', JSON.stringify(response.data.data.teacher));
       
       return response.data.data.teacher;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Upload profile picture
+  async uploadProfilePicture(imageUri: string): Promise<string> {
+    try {
+      const formData = new FormData();
+      formData.append('profilePicture', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'profile.jpg',
+      } as any);
+
+      const response = await api.post('/profile/upload-profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Update local storage with new teacher data
+      await AsyncStorage.setItem('teacherData', JSON.stringify(response.data.data.teacher));
+      
+      return response.data.data.profilePicture;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Delete profile picture
+  async deleteProfilePicture(): Promise<void> {
+    try {
+      const response = await api.delete('/profile/profile-picture');
+      
+      // Update local storage with new teacher data
+      await AsyncStorage.setItem('teacherData', JSON.stringify(response.data.data.teacher));
     } catch (error) {
       throw error;
     }

@@ -2,18 +2,18 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// For Android Emulator: use 10.0.2.2
-// For iOS Simulator: use localhost or 127.0.0.1
-// For Physical Device: use your computer's IP address
+// API Configuration for Production
+// Using live server hosted on Render.com
 
-// Get your computer's IP address by running: ipconfig (Windows) or ifconfig (Mac/Linux)
+// Production API URL
 const getAPIBaseURL = () => {
-  // For physical devices, always use the computer's actual IP address
-  // Since we confirmed the backend is accessible at 192.168.1.4
-  return 'http://192.168.1.4:3000/api';
+  // Live server URL
+  return 'https://edulearnappbackend.onrender.com/api';
   
-  // Note: If you need to switch to emulator later, change to:
-  // return 'http://10.0.2.2:3000/api';
+  // For local development, use one of the following:
+  // For physical devices: 'http://YOUR_IP:3000/api'
+  // For Android emulator: 'http://10.0.2.2:3000/api'
+  // For iOS simulator: 'http://localhost:3000/api'
 };
 
 const API_BASE_URL = getAPIBaseURL();
@@ -35,6 +35,8 @@ api.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      
+      // Debug logging for settings requests
     } catch (error) {
       // Token error handled silently
     }

@@ -168,7 +168,6 @@ export const createThemedStyles = (colors: ThemeColors) => StyleSheet.create({
   'w-24': { width: 96 },
   'w-2': { width: 8 },
   'w-6': { width: 24 },
-  'w-80': { width: 320 },
   'h-8': { height: 32 },
   'h-10': { height: 40 },
   'h-12': { height: 48 },
@@ -176,7 +175,9 @@ export const createThemedStyles = (colors: ThemeColors) => StyleSheet.create({
   'h-20': { height: 80 },
   'h-24': { height: 96 },
   'h-2': { height: 8 },
+  'h-6': { height: 24 },
   'h-full': { height: '100%' },
+  'w-full': { width: '100%' },
   
   // Border Radius
   'rounded': { borderRadius: 4 },

@@ -9,11 +9,12 @@ import {
   Alert,
   RefreshControl,
   Dimensions,
+  Image,
 } from 'react-native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { DrawerActions } from '@react-navigation/native';
+import { DrawerActions, useFocusEffect } from '@react-navigation/native';
 import { DrawerParamList, RootStackParamList } from '../App';
 import { standardService, Standard } from '../services/standardService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -34,11 +35,19 @@ function Home({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [teacherName, setTeacherName] = useState('Teacher');
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
 
   useEffect(() => {
     loadTeacherData();
     loadStandards();
   }, []);
+
+  // Add focus listener to refresh profile data
+  useFocusEffect(
+    React.useCallback(() => {
+      loadTeacherData();
+    }, [])
+  );
 
   const loadTeacherData = async () => {
     try {
@@ -46,6 +55,7 @@ function Home({ navigation }: Props) {
       if (teacherData) {
         const teacher = JSON.parse(teacherData);
         setTeacherName(teacher.name);
+        setProfilePicture(teacher.profilePicture || null);
       }
     } catch (error) {
       // Error loading teacher data, keep defaults
@@ -67,6 +77,7 @@ function Home({ navigation }: Props) {
 
   const onRefresh = () => {
     setRefreshing(true);
+    loadTeacherData(); // Refresh profile data
     loadStandards();
   };
 
@@ -174,9 +185,17 @@ function Home({ navigation }: Props) {
       <View style={[tw['bg-surface'], tw['px-5'], tw['py-6'], tw['shadow-lg'], tw['border-b'], tw['border-surface']]}>
         <View style={[tw['flex-row'], tw['justify-between'], tw['items-center']]}>
           <View style={[tw['flex-row'], tw['items-center'], tw['flex-1']]}>
-            <View style={[tw['w-12'], tw['h-12'], tw['bg-gradient-blue'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mr-3'], tw['shadow-colored-blue']]}>
-              <Text style={[tw['text-xl'], tw['text-white']]}>📚</Text>
-            </View>
+            {profilePicture ? (
+              <Image
+                source={{ uri: profilePicture }}
+                style={[tw['w-12'], tw['h-12'], tw['rounded-full'], tw['mr-3'], tw['shadow-colored-blue']]}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[tw['w-12'], tw['h-12'], tw['bg-gradient-blue'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mr-3'], tw['shadow-colored-blue']]}>
+                <Text style={[tw['text-xl'], tw['text-white']]}>📚</Text>
+              </View>
+            )}
             <View style={[tw['flex-1']]}>
               <Text style={[tw['text-xl'], tw['font-extrabold'], tw['text-primary'], tw['tracking-wide']]}>
                 EduLearn
