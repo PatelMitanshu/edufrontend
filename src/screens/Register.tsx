@@ -61,7 +61,7 @@ function Register() {
       await AsyncStorage.setItem('teacherData', JSON.stringify(response.teacher));
       
       // Navigate to Home
-      navigation.replace('Home');
+      navigation.replace('Dashboard');
       
       // Reset form
       setName('');
@@ -69,7 +69,6 @@ function Register() {
       setPassword('');
       setConfirmPassword('');
     } catch (error: any) {
-      console.error('Registration error:', error);
       const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
       Alert.alert('Registration Failed', errorMessage);
     } finally {

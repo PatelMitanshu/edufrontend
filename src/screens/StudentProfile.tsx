@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   StatusBar,
   ScrollView,
@@ -11,12 +10,15 @@ import {
   RefreshControl,
   ActivityIndicator,
   FlatList,
+  TextInput,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { studentService, Student } from '../services/studentService';
 import { uploadService, Upload } from '../services/uploadService';
 import FileViewer from '../components/FileViewer';
+import { useTheme } from '../contexts/ThemeContext';
+import { tw } from '../utils/tailwind';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentProfile'>;
 
@@ -29,6 +31,10 @@ function StudentProfile({ route, navigation }: Props) {
   const [selectedTab, setSelectedTab] = useState<'all' | 'video' | 'document' | 'image'>('all');
   const [fileViewerVisible, setFileViewerVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<Upload | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedStudent, setEditedStudent] = useState<Partial<Student>>({});
+  
+  const { theme } = useTheme();
 
   useEffect(() => {
     loadStudentData();
@@ -45,7 +51,6 @@ function StudentProfile({ route, navigation }: Props) {
       setStudent(studentResponse.student);
       setUploads(uploadsResponse.uploads);
     } catch (error) {
-      console.error('Error loading student data:', error);
       Alert.alert('Error', 'Failed to load student data. Please try again.');
     } finally {
       setLoading(false);
@@ -88,39 +93,104 @@ function StudentProfile({ route, navigation }: Props) {
 
   const renderUploadItem = ({ item }: { item: Upload }) => (
     <TouchableOpacity
-      style={styles.uploadCard}
+      style={[
+        tw['mb-3'], 
+        tw['p-4'], 
+        tw['rounded-xl'], 
+        { backgroundColor: theme.colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }
+      ]}
       onPress={() => handleFilePress(item)}
       activeOpacity={0.7}
     >
-      <View style={styles.uploadHeader}>
-        <Text style={styles.uploadIcon}>{getTypeIcon(item.type)}</Text>
-        <View style={styles.uploadInfo}>
-          <Text style={styles.uploadTitle}>{item.title}</Text>
-          <Text style={styles.uploadType}>{item.type.toUpperCase()}</Text>
+      <View style={[tw['flex-row'], tw['items-center'], tw['mb-2']]}>
+        <Text style={[tw['text-2xl'], tw['mr-3']]}>{getTypeIcon(item.type)}</Text>
+        <View style={[tw['flex-1']]}>
+          <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>{item.title}</Text>
+          <Text style={[tw['text-sm'], tw['font-medium'], { color: theme.colors.primary }]}>{item.type.toUpperCase()}</Text>
           {item.subject && (
-            <Text style={styles.uploadSubject}>Subject: {item.subject}</Text>
+            <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>Subject: {item.subject}</Text>
           )}
         </View>
-        <View style={styles.uploadAction}>
-          <Text style={styles.uploadActionText}>View</Text>
+        <View style={[tw['px-3'], tw['py-1'], tw['rounded-lg'], { backgroundColor: theme.colors.primary }]}>
+          <Text style={[tw['text-sm'], tw['font-semibold'], { color: theme.colors.surface }]}>View</Text>
         </View>
       </View>
       {item.description && (
-        <Text style={styles.uploadDescription}>{item.description}</Text>
+        <Text style={[tw['text-sm'], tw['mb-2'], { color: theme.colors.textSecondary }]}>{item.description}</Text>
       )}
-      <Text style={styles.uploadDate}>
+      <Text style={[tw['text-xs'], { color: theme.colors.textMuted }]}>
         {new Date(item.createdAt).toLocaleDateString()}
       </Text>
     </TouchableOpacity>
   );
 
+  const handleEditToggle = () => {
+    if (isEditing) {
+      // Save changes
+      handleSaveChanges();
+    } else {
+      // Start editing
+      setEditedStudent({
+        name: student?.name || '',
+        rollNumber: student?.rollNumber || '',
+        parentContact: {
+          phone: student?.parentContact?.phone || '',
+          email: student?.parentContact?.email || ''
+        }
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      if (!student?._id) return;
+      
+      const updateData = {
+        name: editedStudent.name,
+        rollNumber: editedStudent.rollNumber,
+        parentContact: editedStudent.parentContact
+      };
+      
+      const updatedStudent = await studentService.updateStudent(student._id, updateData);
+      setStudent(updatedStudent.student);
+      setIsEditing(false);
+      Alert.alert('Success', 'Student profile updated successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update student profile. Please try again.');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedStudent({});
+  };
+
+  const updateField = (field: string, value: string) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setEditedStudent(prev => ({
+        ...prev,
+        [parent]: {
+          ...(prev[parent as keyof Student] as any),
+          [child]: value
+        }
+      }));
+    } else {
+      setEditedStudent(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
+  };
+
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007bff" />
-          <Text style={styles.loadingText}>Loading student profile...</Text>
+      <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+        <View style={[tw['flex-1'], tw['justify-center'], tw['items-center']]}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[tw['text-lg'], tw['mt-4'], { color: theme.colors.text }]}>Loading student profile...</Text>
         </View>
       </SafeAreaView>
     );
@@ -128,71 +198,233 @@ function StudentProfile({ route, navigation }: Props) {
 
   if (!student) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Student not found</Text>
+      <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+        <View style={[tw['flex-1'], tw['justify-center'], tw['items-center']]}>
+          <Text style={[tw['text-xl'], { color: theme.colors.text }]}>Student not found</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <ScrollView
-        style={styles.scrollView}
+        style={[tw['flex-1']]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Student Info Card */}
-        <View style={styles.studentCard}>
-          <View style={styles.studentHeader}>
-            <View style={styles.studentAvatar}>
-              <Text style={styles.studentInitials}>
+        <View style={[tw['m-4'], tw['p-6'], tw['rounded-xl'], { backgroundColor: theme.colors.surface }]}>
+          <View style={[tw['flex-row'], tw['items-center'], tw['mb-4']]}>
+            <View style={[
+              tw['w-16'], 
+              tw['h-16'], 
+              tw['rounded-full'], 
+              tw['items-center'], 
+              tw['justify-center'], 
+              tw['mr-4'],
+              { backgroundColor: theme.colors.primary }
+            ]}>
+              <Text style={[tw['text-xl'], tw['font-bold'], { color: theme.colors.surface }]}>
                 {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </Text>
             </View>
-            <View style={styles.studentInfo}>
-              <Text style={styles.studentName}>{student.name}</Text>
-              <Text style={styles.studentStandard}>{student.standard.name}</Text>
-              {student.rollNumber && (
-                <Text style={styles.studentDetail}>Roll No: {student.rollNumber}</Text>
+            <View style={[tw['flex-1'], ]}>
+              {isEditing ? (
+                <>
+                  <TextInput
+                    style={[
+                      tw['text-xl'], 
+                      tw['font-bold'], 
+                      tw['mb-3'], 
+                      tw['px-4'], 
+                      tw['py-4'], 
+                      tw['border'], 
+                      tw['rounded-xl'],
+                      { 
+                        color: theme.colors.text,
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderWidth: 1.5,
+                        fontSize: 18,
+                        minHeight: 50,
+                        width: '100%'
+                      }
+                    ]}
+                    value={editedStudent.name || ''}
+                    onChangeText={(text) => updateField('name', text)}
+                    placeholder="Student Name"
+                    placeholderTextColor={theme.colors.textMuted}
+                  />
+                  <TextInput
+                    style={[
+                      tw['text-base'], 
+                      tw['px-4'], 
+                      tw['py-3'], 
+                      tw['border'], 
+                      tw['rounded-xl'],
+                      { 
+                        color: theme.colors.text,
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderWidth: 1.5,
+                        fontSize: 16,
+                        minHeight: 45,
+                        width: '100%'
+                      }
+                    ]}
+                    value={editedStudent.rollNumber || ''}
+                    onChangeText={(text) => updateField('rollNumber', text)}
+                    placeholder="Roll Number"
+                    placeholderTextColor={theme.colors.textMuted}
+                  />
+                </>
+              ) : (
+                <>
+                  <Text style={[tw['text-xl'], tw['font-bold'], tw['mb-2'], { color: theme.colors.text }]}>{student.name}</Text>
+                  <Text style={[tw['text-base'], tw['mb-1'], { color: theme.colors.textSecondary }]}>{student.standard.name}</Text>
+                  {student.rollNumber && (
+                    <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>Roll No: {student.rollNumber}</Text>
+                  )}
+                </>
+              )}
+            </View>
+            <View style={[tw['ml-3']]}>
+              <TouchableOpacity
+                style={[
+                  tw['px-5'], 
+                  tw['py-3'], 
+                  tw['rounded-xl'], 
+                  tw['shadow-lg'],
+                  tw['mb-2'],
+                  { 
+                    backgroundColor: isEditing ? theme.colors.success : theme.colors.primary,
+                    elevation: 3
+                  }
+                ]}
+                onPress={handleEditToggle}
+              >
+                <Text style={[tw['text-sm'], tw['font-bold'], { color: '#ffffff' }]}>
+                  {isEditing ? '💾 Save' : '✏️ Edit'}
+                </Text>
+              </TouchableOpacity>
+              {isEditing && (
+                <TouchableOpacity
+                  style={[
+                    tw['px-4'], 
+                    tw['py-3'], 
+                    tw['rounded-xl'], 
+                    tw['shadow-lg'],
+                    { 
+                      backgroundColor: theme.colors.error,
+                      elevation: 3
+                    }
+                  ]}
+                  onPress={handleCancelEdit}
+                >
+                  <Text style={[tw['text-sm'], tw['font-bold'], { color: '#ffffff' }]}>❌ Cancel</Text>
+                </TouchableOpacity>
               )}
             </View>
           </View>
 
           {/* Contact Information */}
-          {(student.parentContact?.phone || student.parentContact?.email) && (
-            <View style={styles.contactSection}>
-              <Text style={styles.sectionTitle}>Parent Contact</Text>
-              {student.parentContact.phone && (
-                <Text style={styles.contactDetail}>📞 {student.parentContact.phone}</Text>
-              )}
-              {student.parentContact.email && (
-                <Text style={styles.contactDetail}>✉️ {student.parentContact.email}</Text>
+          <View style={[tw['mt-4'], { paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
+            <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-3'], { color: theme.colors.text }]}>Parent Contact</Text>
+            
+            {/* Phone */}
+            <View style={[tw['mb-3']]}>
+              <Text style={[tw['text-sm'], tw['font-medium'], tw['mb-1'], { color: theme.colors.textSecondary }]}>Phone Number</Text>
+              {isEditing ? (
+                <TextInput
+                  style={[
+                    tw['text-base'], 
+                    tw['px-3'], 
+                    tw['py-3'], 
+                    tw['border'], 
+                    tw['rounded-xl'],
+                    tw['mt-1'],
+                    { 
+                      color: theme.colors.text,
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      borderWidth: 1.5,
+                      fontSize: 16
+                    }
+                  ]}
+                  value={editedStudent.parentContact?.phone || student.parentContact?.phone || ''}
+                  onChangeText={(text) => updateField('parentContact.phone', text)}
+                  placeholder="Enter phone number"
+                  placeholderTextColor={theme.colors.textMuted}
+                  keyboardType="phone-pad"
+                />
+              ) : (
+                <Text style={[tw['text-base'], { color: theme.colors.text }]}>
+                  {student.parentContact?.phone ? `📞 ${student.parentContact.phone}` : 'Not provided'}
+                </Text>
               )}
             </View>
-          )}
 
-          {/* Add Upload Button */}
-          <TouchableOpacity style={styles.addButton} onPress={handleAddUpload}>
-            <Text style={styles.addButtonText}>+ Add Upload</Text>
-          </TouchableOpacity>
+            {/* Email */}
+            <View style={[tw['mb-0']]}>
+              <Text style={[tw['text-sm'], tw['font-medium'], tw['mb-1'], { color: theme.colors.textSecondary }]}>Email Address</Text>
+              {isEditing ? (
+                <TextInput
+                  style={[
+                    tw['text-base'], 
+                    tw['px-3'], 
+                    tw['py-3'], 
+                    tw['border'], 
+                    tw['rounded-xl'],
+                    tw['mt-1'],
+                    { 
+                      color: theme.colors.text,
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      borderWidth: 1.5,
+                      fontSize: 16
+                    }
+                  ]}
+                  value={editedStudent.parentContact?.email || student.parentContact?.email || ''}
+                  onChangeText={(text) => updateField('parentContact.email', text)}
+                  placeholder="Enter email address"
+                  placeholderTextColor={theme.colors.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              ) : (
+                <Text style={[tw['text-base'], { color: theme.colors.text }]}>
+                  {student.parentContact?.email ? `✉️ ${student.parentContact.email}` : 'Not provided'}
+                </Text>
+              )}
+            </View>
+          </View>
         </View>
 
-        {/* Uploads Section */}
-        <View style={styles.uploadsSection}>
-          <Text style={styles.sectionTitle}>Student Work ({uploads.length})</Text>
+        {/* Student Work Section */}
+        <View style={[tw['m-4'], tw['p-6'], tw['rounded-xl'], { backgroundColor: theme.colors.surface }]}>
+          <Text style={[tw['text-xl'], tw['font-bold'], tw['mb-4'], { color: theme.colors.text }]}>Student Work ({uploads.length})</Text>
           
           {/* Filter Tabs */}
-          <View style={styles.tabContainer}>
+          <View style={[tw['flex-row'], tw['mb-2']]}>
             {['all', 'video', 'document', 'image'].map((tab) => (
               <TouchableOpacity
                 key={tab}
-                style={[styles.tab, selectedTab === tab && styles.activeTab]}
+                style={[
+                  tw['px-2'], 
+                  tw['py-2'], 
+                  tw['rounded-lg'], 
+                  tw['mr-2'],
+                  { backgroundColor: selectedTab === tab ? theme.colors.primary : theme.colors.background }
+                ]}
                 onPress={() => setSelectedTab(tab as any)}
               >
-                <Text style={[styles.tabText, selectedTab === tab && styles.activeTabText]}>
+                <Text style={[
+                  tw['text-sm'], 
+                  tw['font-medium'], 
+                  { color: selectedTab === tab ? theme.colors.surface : theme.colors.text }
+                ]}>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </Text>
               </TouchableOpacity>
@@ -206,15 +438,32 @@ function StudentProfile({ route, navigation }: Props) {
             keyExtractor={(item) => item._id}
             scrollEnabled={false}
             ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>📚</Text>
-                <Text style={styles.emptyText}>No uploads yet</Text>
-                <Text style={styles.emptySubtext}>
+              <View style={[tw['items-center'], tw['p-8']]}>
+                <Text style={[tw['text-4xl'], tw['mb-4']]}>📚</Text>
+                <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-2'], { color: theme.colors.text }]}>No uploads yet</Text>
+                <Text style={[tw['text-base'], tw['text-center'], { color: theme.colors.textSecondary }]}>
                   Add videos, documents, or images to track student's work
                 </Text>
               </View>
             }
           />
+          
+          {/* Add Upload Button */}
+          <TouchableOpacity
+            style={[
+              tw['mt-4'], 
+              tw['py-3'], 
+              tw['px-6'], 
+              tw['rounded-xl'], 
+              tw['items-center'],
+              { backgroundColor: theme.colors.primary }
+            ]}
+            onPress={handleAddUpload}
+          >
+            <Text style={[tw['text-base'], tw['font-semibold'], { color: theme.colors.surface }]}>
+              📎 Add New Upload
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -233,234 +482,6 @@ function StudentProfile({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6c757d',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#dc3545',
-  },
-  studentCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  studentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  studentAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#007bff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  studentInitials: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  studentInfo: {
-    flex: 1,
-  },
-  studentName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 4,
-  },
-  studentStandard: {
-    fontSize: 16,
-    color: '#007bff',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  studentDetail: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  contactSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 12,
-  },
-  contactDetail: {
-    fontSize: 16,
-    color: '#6c757d',
-    marginBottom: 4,
-  },
-  addButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#28a745',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  uploadsSection: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginTop: 0,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
-    borderRadius: 20,
-    backgroundColor: '#f8f9fa',
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#007bff',
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#6c757d',
-    fontWeight: '600',
-  },
-  activeTabText: {
-    color: '#fff',
-  },
-  uploadCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#007bff',
-  },
-  uploadHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  uploadIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  uploadInfo: {
-    flex: 1,
-  },
-  uploadAction: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#007bff',
-    borderRadius: 6,
-  },
-  uploadActionText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  uploadTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 4,
-  },
-  uploadType: {
-    fontSize: 12,
-    color: '#007bff',
-    fontWeight: '600',
-  },
-  uploadSubject: {
-    fontSize: 12,
-    color: '#6c757d',
-  },
-  uploadDescription: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  uploadDate: {
-    fontSize: 12,
-    color: '#adb5bd',
-    textAlign: 'right',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#6c757d',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#adb5bd',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});
+
 
 export default StudentProfile;

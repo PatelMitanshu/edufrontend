@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   SafeAreaView,
@@ -14,6 +13,9 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { studentService, Student } from '../services/studentService';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/themedStyles';
+import { tw } from '../utils/tailwind';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StandardDetail'>;
 
@@ -22,6 +24,9 @@ function StandardDetail({ route, navigation }: Props) {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  const { theme } = useTheme();
+  const themedStyles = useThemedStyles(theme.colors);
 
   useEffect(() => {
     loadStudents();
@@ -33,7 +38,6 @@ function StandardDetail({ route, navigation }: Props) {
       const response = await studentService.getStudentsByStandard(standardId);
       setStudents(response.students);
     } catch (error) {
-      console.error('Error loading students:', error);
       Alert.alert('Error', 'Failed to load students. Please try again.');
     } finally {
       setLoading(false);
@@ -56,56 +60,74 @@ function StandardDetail({ route, navigation }: Props) {
 
   const renderStudentCard = ({ item }: { item: Student }) => (
     <TouchableOpacity
-      style={styles.studentCard}
+      style={[
+        tw['flex-row'], 
+        tw['items-center'], 
+        tw['p-4'], 
+        tw['mb-3'], 
+        tw['rounded-xl'],
+        { backgroundColor: theme.colors.surface }
+      ]}
       onPress={() => handleStudentPress(item)}
       activeOpacity={0.7}
     >
-      <View style={styles.studentAvatar}>
-        <Text style={styles.studentInitials}>
+      <View style={[
+        tw['w-12'], 
+        tw['h-12'], 
+        tw['rounded-full'], 
+        tw['items-center'], 
+        tw['justify-center'], 
+        tw['mr-4'],
+        { backgroundColor: theme.colors.primary }
+      ]}>
+        <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
           {item.name.split(' ').map(n => n[0]).join('').toUpperCase()}
         </Text>
       </View>
-      <View style={styles.studentInfo}>
-        <Text style={styles.studentName}>{item.name}</Text>
+      <View style={[tw['flex-1']]}>
+        <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>{item.name}</Text>
         {item.rollNumber && (
-          <Text style={styles.studentRoll}>Roll No: {item.rollNumber}</Text>
+          <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>Roll No: {item.rollNumber}</Text>
         )}
         {item.parentContact?.phone && (
-          <Text style={styles.studentContact}>📞 {item.parentContact.phone}</Text>
+          <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>📞 {item.parentContact.phone}</Text>
         )}
       </View>
-      <View style={styles.cardArrow}>
-        <Text style={styles.arrowText}>→</Text>
+      <View style={[tw['w-6'], tw['items-center']]}>
+        <Text style={[tw['text-lg'], { color: theme.colors.textSecondary }]}>→</Text>
       </View>
     </TouchableOpacity>
   );
 
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007bff" />
-          <Text style={styles.loadingText}>Loading students...</Text>
+      <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+        <View style={[tw['flex-1'], tw['justify-center'], tw['items-center']]}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[tw['text-lg'], tw['mt-4'], { color: theme.colors.text }]}>Loading students...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.standardTitle}>{standardName}</Text>
-        <Text style={styles.studentCount}>{students.length} Students</Text>
+      <View style={[tw['p-6'], { backgroundColor: theme.colors.surface, paddingBottom: 16 }]}>
+        <Text style={[tw['text-2xl'], tw['font-bold'], tw['mb-2'], { color: theme.colors.text }]}>{standardName}</Text>
+        <Text style={[tw['text-base'], { color: theme.colors.textSecondary }]}>{students.length} Students</Text>
       </View>
 
       {/* Add Student Button */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddStudent}>
-          <Text style={styles.addButtonText}>+ Add Student</Text>
+      <View style={[tw['px-6'], tw['py-4']]}>
+        <TouchableOpacity 
+          style={[tw['py-3'], tw['px-6'], tw['rounded-xl'], tw['items-center'], { backgroundColor: theme.colors.primary }]} 
+          onPress={handleAddStudent}
+        >
+          <Text style={[tw['text-base'], tw['font-semibold'] , { color: theme.colors.surface }]}>+ Add Student</Text>
         </TouchableOpacity>
       </View>
 
@@ -114,20 +136,25 @@ function StandardDetail({ route, navigation }: Props) {
         data={students}
         renderItem={renderStudentCard}
         keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[tw['px-6']]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>👥</Text>
-            <Text style={styles.emptyText}>No students yet</Text>
-            <Text style={styles.emptySubtext}>
+          <View style={[tw['items-center'], tw['py-10']]}>
+            <Text style={[tw['text-4xl'], tw['mb-4']]}>👥</Text>
+            <Text style={[tw['text-lg'], tw['font-bold'], tw['mb-2'], { color: theme.colors.text }]}>
+              No students yet
+            </Text>
+            <Text style={[tw['text-base'], tw['text-center'], tw['mb-6'], { color: theme.colors.textSecondary }]}>
               Start by adding your first student to this standard
             </Text>
-            <TouchableOpacity style={styles.emptyButton} onPress={handleAddStudent}>
-              <Text style={styles.emptyButtonText}>Add First Student</Text>
+            <TouchableOpacity 
+              style={[tw['py-3'], tw['px-6'], tw['rounded-xl'], { backgroundColor: theme.colors.primary }]} 
+              onPress={handleAddStudent}
+            >
+              <Text style={[tw['text-base'], tw['font-semibold'], { color: theme.colors.surface }]}>Add First Student</Text>
             </TouchableOpacity>
           </View>
         }
@@ -135,162 +162,5 @@ function StandardDetail({ route, navigation }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6c757d',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  standardTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 4,
-  },
-  studentCount: {
-    fontSize: 16,
-    color: '#6c757d',
-  },
-  actionContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  addButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#007bff',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  listContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  studentCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  studentAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#007bff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  studentInitials: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  studentInfo: {
-    flex: 1,
-  },
-  studentName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 4,
-  },
-  studentRoll: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginBottom: 2,
-  },
-  studentContact: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  cardArrow: {
-    paddingLeft: 16,
-  },
-  arrowText: {
-    fontSize: 20,
-    color: '#007bff',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#6c757d',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 16,
-    color: '#adb5bd',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  emptyButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    shadowColor: '#28a745',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  emptyButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
 
 export default StandardDetail;

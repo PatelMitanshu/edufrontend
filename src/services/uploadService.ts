@@ -70,9 +70,6 @@ export const uploadService = {
     if (data.subject) formData.append('subject', data.subject);
     if (data.tags) formData.append('tags', JSON.stringify(data.tags));
     
-    // Log file structure for debugging
-    console.log('File object:', JSON.stringify(data.file, null, 2));
-    
     // Properly format file for upload based on the file object structure
     const fileData = {
       uri: data.file.uri,
@@ -80,7 +77,6 @@ export const uploadService = {
       name: data.file.name || data.file.fileName || data.file.originalName || 'upload',
     };
     
-    console.log('Formatted file data:', JSON.stringify(fileData, null, 2));
     formData.append('file', fileData as any);
 
     const response = await api.post('/uploads', formData, {

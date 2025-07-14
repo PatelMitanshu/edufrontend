@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   SafeAreaView,
@@ -11,16 +10,26 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import { DrawerActions } from '@react-navigation/native';
+import { DrawerParamList, RootStackParamList } from '../App';
 import { standardService, Standard } from '../services/standardService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/themedStyles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = CompositeScreenProps<
+  DrawerScreenProps<DrawerParamList, 'Home'>,
+  NativeStackScreenProps<RootStackParamList>
+>;
 
 const { width } = Dimensions.get('window');
 
 function Home({ navigation }: Props) {
+  const { theme } = useTheme();
+  const tw = useThemedStyles(theme.colors);
   const [standards, setStandards] = useState<Standard[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,7 +48,7 @@ function Home({ navigation }: Props) {
         setTeacherName(teacher.name);
       }
     } catch (error) {
-      console.error('Error loading teacher data:', error);
+      // Error loading teacher data, keep defaults
     }
   };
 
@@ -49,7 +58,6 @@ function Home({ navigation }: Props) {
       const response = await standardService.getStandards();
       setStandards(response.standards);
     } catch (error) {
-      console.error('Error loading standards:', error);
       Alert.alert('Error', 'Failed to load standards. Please try again.');
     } finally {
       setLoading(false);
@@ -81,69 +89,120 @@ function Home({ navigation }: Props) {
     );
   };
 
+  const openDrawer = () => {
+    navigation.dispatch(DrawerActions.openDrawer());
+  };
+
   const renderStandardCard = ({ item }: { item: Standard }) => (
     <TouchableOpacity
-      style={styles.standardCard}
+      style={[tw['bg-surface'], tw['rounded-3xl'], tw['mb-4'], tw['shadow-xl'], tw['flex-row'], tw['items-center'], tw['overflow-hidden'], tw['border'], tw['border-surface']]}
       onPress={() => navigation.navigate('StandardDetail', { 
         standardId: item._id, 
         standardName: item.name 
       })}
       activeOpacity={0.7}
     >
-      <View style={styles.cardContent}>
-        <Text style={styles.standardName}>{item.name}</Text>
-        {item.description && (
-          <Text style={styles.standardDescription}>{item.description}</Text>
-        )}
-        <View style={styles.subjectsContainer}>
+      {/* Colorful Left Border */}
+      <View style={[tw['w-2'], tw['h-full'], tw['bg-gradient-blue']]} />
+      
+      <View style={[tw['flex-1'], tw['p-5']]}>
+        <View style={[tw['flex-row'], tw['items-center'], tw['mb-3']]}>
+          <View style={[tw['w-12'], tw['h-12'], tw['bg-primary-light'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mr-3']]}>
+            <Text style={[tw['text-2xl']]}>📚</Text>
+          </View>
+          <View style={tw['flex-1']}>
+            <Text style={[tw['text-xl'], tw['font-bold'], tw['text-primary'], tw['mb-1']]}>
+              {item.name}
+            </Text>
+            <Text style={[tw['text-sm'], tw['text-primary'], tw['font-medium'], tw['uppercase'], tw['tracking-wide']]}>
+              Standard
+            </Text>
+          </View>
+        </View>
+        
+        
+        
+        <View style={[tw['flex-row'], tw['flex-wrap'], tw['items-center']]}>
           {item.subjects.slice(0, 3).map((subject, index) => (
-            <View key={index} style={styles.subjectTag}>
-              <Text style={styles.subjectText}>{subject}</Text>
+            <View key={index} style={[tw['bg-gradient-blue'], tw['px-3'], tw['py-1'], tw['rounded-full'], tw['mr-2'], tw['mb-1'], tw['shadow-xs']]}>
+              <Text style={[tw['text-xs'], tw['text-white'], tw['font-medium'], tw['tracking-wide']]}>
+                {subject}
+              </Text>
             </View>
           ))}
           {item.subjects.length > 3 && (
-            <Text style={styles.moreSubjects}>
-              +{item.subjects.length - 3} more
-            </Text>
+            <View style={[tw['bg-primary-light'], tw['px-3'], tw['py-1'], tw['rounded-full'], tw['mb-1']]}>
+              <Text style={[tw['text-xs'], tw['text-primary'], tw['font-medium']]}>
+                +{item.subjects.length - 3} more
+              </Text>
+            </View>
           )}
         </View>
       </View>
-      <View style={styles.cardArrow}>
-        <Text style={styles.arrowText}>→</Text>
+      
+      {/* Enhanced Arrow */}
+      <View style={[tw['px-5'], tw['items-center']]}>
+        <View style={[tw['w-10'], tw['h-10'], tw['bg-primary'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['shadow-colored-blue']]}>
+          <Text style={[tw['text-white'], tw['text-lg'], tw['font-bold']]}>→</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
 
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading standards...</Text>
+      <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}>
+        <StatusBar 
+          barStyle={theme.isDark ? "light-content" : "dark-content"} 
+          backgroundColor={theme.colors.background} 
+        />
+        <View style={[tw['flex-1'], tw['justify-center'], tw['items-center']]}>
+          <Text style={[tw['text-base'], tw['text-secondary']]}>Loading standards...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle={theme.isDark ? "light-content" : "dark-content"} 
+        backgroundColor={theme.colors.background} 
+      />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.teacherName}>{teacherName}</Text>
+      {/* Enhanced Header */}
+      <View style={[tw['bg-surface'], tw['px-5'], tw['py-6'], tw['shadow-lg'], tw['border-b'], tw['border-surface']]}>
+        <View style={[tw['flex-row'], tw['justify-between'], tw['items-center']]}>
+          <View style={[tw['flex-row'], tw['items-center'], tw['flex-1']]}>
+            <View style={[tw['w-12'], tw['h-12'], tw['bg-gradient-blue'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mr-3'], tw['shadow-colored-blue']]}>
+              <Text style={[tw['text-xl'], tw['text-white']]}>📚</Text>
+            </View>
+            <View style={[tw['flex-1']]}>
+              <Text style={[tw['text-xl'], tw['font-extrabold'], tw['text-primary'], tw['tracking-wide']]}>
+                EduLearn
+              </Text>
+              <Text style={[tw['text-sm'], tw['text-secondary'], tw['font-medium']]}>
+                Welcome back, {teacherName}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={[tw['bg-gradient-primary'], tw['px-4'], tw['py-3'], tw['rounded-xl'], tw['items-center'], tw['shadow-colored-blue']]}
+            onPress={openDrawer}
+          >
+            <Text style={[tw['text-white'], tw['text-lg'], tw['font-bold']]}>☰</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Title */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Select a Standard</Text>
-        <Text style={styles.subtitle}>Choose a standard to manage students and their work</Text>
+      {/* Enhanced Title Section */}
+      <View style={[tw['px-5'], tw['py-6'], tw['bg-surface'], tw['mb-2']]}>
+        <Text style={[tw['text-3xl'], tw['font-extrabold'], tw['text-primary'], tw['mb-2'], tw['tracking-wide']]}>
+          Select a Standard
+        </Text>
+        <Text style={[tw['text-base'], tw['text-secondary'], tw['leading-relaxed'], tw['font-light']]}>
+          Choose a standard to manage students and their work
+        </Text>
       </View>
 
       {/* Standards List */}
@@ -151,15 +210,19 @@ function Home({ navigation }: Props) {
         data={standards}
         renderItem={renderStandardCard}
         keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.listContainer}
+        style={[tw['px-5']]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No standards available</Text>
-            <Text style={styles.emptySubtext}>Contact your administrator to add standards</Text>
+          <View style={[tw['items-center'], tw['py-10']]}>
+            <Text style={[tw['text-lg'], tw['font-semibold'], tw['text-secondary'], tw['mb-2']]}>
+              No standards available
+            </Text>
+            <Text style={[tw['text-sm'], tw['text-muted'], tw['text-center']]}>
+              Contact your administrator to add standards
+            </Text>
           </View>
         }
       />
@@ -168,146 +231,3 @@ function Home({ navigation }: Props) {
 }
 
 export default Home;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6c757d',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: '#6c757d',
-    marginBottom: 4,
-  },
-  teacherName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
-  },
-  logoutButton: {
-    backgroundColor: '#dc3545',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  logoutText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  titleContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6c757d',
-    lineHeight: 22,
-  },
-  listContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  standardCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  cardContent: {
-    flex: 1,
-    padding: 20,
-  },
-  standardName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 8,
-  },
-  standardDescription: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  subjectsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  },
-  subjectTag: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  subjectText: {
-    fontSize: 12,
-    color: '#1565c0',
-    fontWeight: '500',
-  },
-  moreSubjects: {
-    fontSize: 12,
-    color: '#6c757d',
-    fontStyle: 'italic',
-  },
-  cardArrow: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  arrowText: {
-    fontSize: 24,
-    color: '#007bff',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6c757d',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#adb5bd',
-    textAlign: 'center',
-  },
-});

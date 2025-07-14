@@ -16,11 +16,13 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { studentService } from '../services/studentService';
+import { useTheme } from '../contexts/ThemeContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddStudent'>;
 
 function AddStudent({ route, navigation }: Props) {
   const { standardId } = route.params;
+  const { theme } = useTheme();
   const [name, setName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
   const [parentPhone, setParentPhone] = useState('');
@@ -81,7 +83,6 @@ function AddStudent({ route, navigation }: Props) {
         },
       ]);
     } catch (error: any) {
-      console.error('Error adding student:', error);
       const errorMessage = error.response?.data?.message || 'Failed to add student. Please try again.';
       Alert.alert('Error', errorMessage);
     } finally {
@@ -90,27 +91,38 @@ function AddStudent({ route, navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle={theme.isDark ? "light-content" : "dark-content"} 
+        backgroundColor={theme.colors.background} 
+      />
       <KeyboardAvoidingView 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.header}>
-            <Text style={styles.title}>Add New Student</Text>
-            <Text style={styles.subtitle}>Fill in the student's information</Text>
+            <Text style={[styles.title, { color: theme.colors.text }]}>Add New Student</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Fill in the student's information</Text>
           </View>
 
-          <View style={styles.formContainer}>
+          <View style={[styles.formContainer, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Student Information</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Student Information</Text>
               
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Student Name *</Text>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Student Name *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    { 
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text
+                    }
+                  ]}
                   placeholder="Enter student's full name"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={name}
                   onChangeText={setName}
                   autoCapitalize="words"
@@ -118,20 +130,36 @@ function AddStudent({ route, navigation }: Props) {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Roll Number</Text>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Roll Number</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    { 
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text
+                    }
+                  ]}
                   placeholder="Enter roll number (optional)"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={rollNumber}
                   onChangeText={setRollNumber}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Date of Birth</Text>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Date of Birth</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    { 
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text
+                    }
+                  ]}
                   placeholder="YYYY-MM-DD (e.g., 2010-05-15) - optional"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={dateOfBirth}
                   onChangeText={setDateOfBirth}
                   keyboardType="numbers-and-punctuation"
@@ -140,13 +168,21 @@ function AddStudent({ route, navigation }: Props) {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Parent Contact Information</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Parent Contact Information</Text>
               
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Parent Phone Number</Text>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Parent Phone Number</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    { 
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text
+                    }
+                  ]}
                   placeholder="Enter 10-digit phone number"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={parentPhone}
                   onChangeText={setParentPhone}
                   keyboardType="phone-pad"
@@ -155,10 +191,18 @@ function AddStudent({ route, navigation }: Props) {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Parent Email</Text>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Parent Email</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    { 
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text
+                    }
+                  ]}
                   placeholder="Enter parent's email address"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={parentEmail}
                   onChangeText={setParentEmail}
                   keyboardType="email-address"
@@ -168,7 +212,11 @@ function AddStudent({ route, navigation }: Props) {
             </View>
 
             <TouchableOpacity 
-              style={[styles.submitButton, loading && styles.buttonDisabled]}
+              style={[
+                styles.submitButton, 
+                { backgroundColor: loading ? theme.colors.textMuted : theme.colors.primary },
+                loading && styles.buttonDisabled
+              ]}
               onPress={handleSubmit}
               disabled={loading}
             >
@@ -188,7 +236,6 @@ function AddStudent({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -201,18 +248,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#212529',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6c757d',
   },
   formContainer: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -227,7 +270,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#212529',
     marginBottom: 16,
   },
   inputContainer: {
@@ -236,21 +278,16 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#343a40',
     marginBottom: 8,
   },
   input: {
     height: 52,
-    borderColor: '#e9ecef',
     borderWidth: 1,
     borderRadius: 12,
-    backgroundColor: '#f8f9fa',
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#212529',
   },
   submitButton: {
-    backgroundColor: '#007bff',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -264,7 +301,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: '#6c757d',
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#fff',

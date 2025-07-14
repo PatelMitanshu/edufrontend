@@ -103,9 +103,6 @@ const FileViewer: React.FC<FileViewerProps> = ({
             <TouchableOpacity
               style={styles.openButton}
               onPress={() => {
-                console.log('Opening video URL:', fileUrl);
-                console.log('Video mime type:', mimeType);
-                
                 // For Android, try to open with Intent
                 if (Platform.OS === 'android') {
                   const videoIntent = `intent:${fileUrl}#Intent;type=video/*;package=com.google.android.youtube;scheme=https;end`;
@@ -120,7 +117,6 @@ const FileViewer: React.FC<FileViewerProps> = ({
                       }
                     })
                     .catch((error) => {
-                      console.error('Error opening video:', error);
                       // Try direct URL as final fallback
                       Linking.openURL(fileUrl).catch(() => {
                         Alert.alert('Error', 'Could not open video. Please ensure you have a video player app installed.');
@@ -129,7 +125,6 @@ const FileViewer: React.FC<FileViewerProps> = ({
                 } else {
                   // iOS - direct URL should work
                   Linking.openURL(fileUrl).catch((error) => {
-                    console.error('Error opening video:', error);
                     Alert.alert('Error', 'Could not open video');
                   });
                 }
@@ -153,7 +148,6 @@ const FileViewer: React.FC<FileViewerProps> = ({
                 style={styles.webview}
                 onError={(syntheticEvent) => {
                   const { nativeEvent } = syntheticEvent;
-                  console.error('WebView error:', nativeEvent);
                   setError(true);
                 }}
                 onLoad={() => setLoading(false)}
@@ -186,7 +180,6 @@ const FileViewer: React.FC<FileViewerProps> = ({
               style={styles.webview}
               onError={(syntheticEvent) => {
                 const { nativeEvent } = syntheticEvent;
-                console.error('WebView error:', nativeEvent);
                 handleError();
               }}
               onLoad={() => setLoading(false)}

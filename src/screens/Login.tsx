@@ -4,7 +4,6 @@ import {
   Text,
   Pressable,
   TextInput,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,8 +15,12 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { authService } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../utils/themedStyles';
 
 function Login() {
+  const { theme } = useTheme();
+  const tw = useThemedStyles(theme.colors);
   const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,14 +40,13 @@ function Login() {
       await AsyncStorage.setItem('authToken', response.token);
       await AsyncStorage.setItem('teacherData', JSON.stringify(response.teacher));
       
-      // Navigate to Home
-      navigation.replace('Home');
+      // Navigate to Dashboard (previously Home)
+      navigation.replace('Dashboard');
       
       // Reset form
       setEmail('');
       setPassword('');
     } catch (error: any) {
-      console.error('Login error:', error);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       Alert.alert('Login Failed', errorMessage);
     } finally {
@@ -57,71 +59,103 @@ function Login() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#007bff" />
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <View style={styles.headerContainer}>
-            <Text style={styles.logo}>📚</Text>
-            <Text style={styles.title}>EduLearn</Text>
-            <Text style={styles.subtitle}>Manage students and their learning journey</Text>
+    <SafeAreaView style={[tw['flex-1'], tw['bg-gradient-primary']]}>
+      <StatusBar 
+        barStyle={theme.isDark ? "light-content" : "light-content"} 
+        backgroundColor={theme.colors.gradientStart} 
+      />
+      <KeyboardAvoidingView 
+        style={tw['flex-1']} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={[tw['flex-grow'], tw['justify-center'], tw['px-5'], tw['py-10']]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Enhanced Header Section */}
+          <View style={[tw['items-center'], tw['mb-10']]}>
+            <View style={[tw['w-24'], tw['h-24'], tw['rounded-full'], tw['bg-white'], tw['justify-center'], tw['items-center'], tw['mb-4'], tw['shadow-xl']]}>
+              <Text style={tw['text-5xl']}>📚</Text>
+            </View>
+            <Text style={[tw['text-4xl'], tw['font-extrabold'], tw['text-white'], tw['mb-2'], tw['tracking-wide']]}>EduLearn</Text>
+            <Text style={[tw['text-lg'], tw['text-white'], tw['text-center'], tw['leading-relaxed'], tw['font-light']]}>
+              Education Made Simple & Beautiful
+            </Text>
           </View>
 
-          <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="#adb5bd"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+          {/* Enhanced Form Container */}
+          <View style={[tw['bg-white'], tw['rounded-3xl'], tw['p-6'], tw['shadow-2xl'], tw['border'], tw['border-primary-300']]}>
+            <Text style={[tw['text-2xl'], tw['font-bold'], tw['text-gray-800'], tw['mb-6'], tw['text-center']]}>
+              Welcome Back
+            </Text>
+            
+            <View style={tw['mb-5']}>
+              <Text style={[tw['text-sm'], tw['font-semibold'], tw['text-gray-800'], tw['mb-2'], tw['tracking-wide'], tw['uppercase']]}>Email</Text>
+              <View style={[tw['border-l-4'], tw['border-blue-500'], tw['bg-blue-50']]}>
+                <TextInput
+                  style={[tw['h-13'], tw['border'], tw['border-blue-200'], tw['rounded-xl'], tw['px-4'], tw['text-base'], tw['text-gray-800'], tw['bg-white']]}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#94a3b8"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="#adb5bd"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-              />
+            <View style={tw['mb-6']}>
+              <Text style={[tw['text-sm'], tw['font-semibold'], tw['text-gray-800'], tw['mb-2'], tw['tracking-wide'], tw['uppercase']]}>Password</Text>
+              <View style={[tw['border-l-4'], tw['border-purple-500'], tw['bg-purple-50']]}>
+                <TextInput
+                  style={[tw['h-13'], tw['border'], tw['border-purple-200'], tw['rounded-xl'], tw['px-4'], tw['text-base'], tw['text-gray-800'], tw['bg-white']]}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#94a3b8"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                  autoCapitalize="none"
+                />
+              </View>
             </View>
 
+            {/* Enhanced Login Button */}
             <Pressable 
-              style={({ pressed }) => [
-                styles.loginButton, 
-                pressed && styles.buttonPressed,
-                loading && styles.buttonDisabled
-              ]} 
+              style={[
+                tw['bg-gradient-primary'], 
+                tw['py-4'], 
+                tw['rounded-xl'], 
+                tw['items-center'], 
+                tw['shadow-colored-blue'],
+                tw['mb-4'],
+                loading && tw['bg-gray-500']
+              ]}
               onPress={handleLogin}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.loginButtonText}>Login</Text>
+                <Text style={[tw['text-white'], tw['text-lg'], tw['font-bold'], tw['tracking-wide']]}>Login</Text>
               )}
             </Pressable>
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
+            {/* Enhanced Divider */}
+            <View style={[tw['flex-row'], tw['items-center'], tw['my-6']]}>
+              <View style={[tw['flex-1'], tw['h-px'], tw['bg-gradient-blue']]} />
+              <Text style={[tw['mx-4'], tw['text-sm'], tw['text-gray-500'], tw['font-medium'], tw['bg-gray-50'], tw['px-3'], tw['py-1'], tw['rounded-full']]}>OR</Text>
+              <View style={[tw['flex-1'], tw['h-px'], tw['bg-gradient-blue']]} />
             </View>
 
+            {/* Enhanced Register Button */}
             <Pressable 
-              style={({ pressed }) => [styles.registerButton, pressed && styles.buttonPressed]} 
+              style={[tw['border-2'], tw['border-primary-500'], tw['py-3'], tw['rounded-xl'], tw['items-center'], tw['bg-primary-50'], tw['shadow-xs']]}
               onPress={navigateToRegister}
             >
-              <Text style={styles.registerButtonText}>Create New Account</Text>
+              <Text style={[tw['text-primary-500'], tw['text-lg'], tw['font-semibold'], tw['tracking-wide']]}>
+                Create New Account
+              </Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -129,125 +163,5 @@ function Login() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#007bff',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#e3f2fd',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  formContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#343a40',
-    marginBottom: 8,
-  },
-  input: {
-    height: 52,
-    borderColor: '#e9ecef',
-    borderWidth: 1,
-    borderRadius: 12,
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#212529',
-  },
-  loginButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#007bff',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  buttonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
-  buttonDisabled: {
-    backgroundColor: '#6c757d',
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e9ecef',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: '#6c757d',
-    fontWeight: '500',
-  },
-  registerButton: {
-    borderWidth: 2,
-    borderColor: '#007bff',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  registerButtonText: {
-    color: '#007bff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
 
 export default Login;

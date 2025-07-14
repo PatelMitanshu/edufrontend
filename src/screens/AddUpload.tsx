@@ -18,11 +18,13 @@ import { RootStackParamList } from '../App';
 import { uploadService } from '../services/uploadService';
 import { launchImageLibrary, MediaType } from 'react-native-image-picker';
 import { DocumentPickerResponse, pick, types } from '@react-native-documents/picker';
+import { useTheme } from '../contexts/ThemeContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddUpload'>;
 
 function AddUpload({ route, navigation }: Props) {
   const { studentId } = route.params;
+  const { theme } = useTheme();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [subject, setSubject] = useState('');
@@ -61,7 +63,7 @@ function AddUpload({ route, navigation }: Props) {
           }
         })
         .catch((err) => {
-          console.error('Document picker error:', err);
+          // Document picker cancelled or error occurred
         });
     }
   };
@@ -105,7 +107,6 @@ function AddUpload({ route, navigation }: Props) {
         },
       ]);
     } catch (error: any) {
-      console.error('Error adding upload:', error);
       const errorMessage = error.response?.data?.message || 'Failed to add upload. Please try again.';
       Alert.alert('Error', errorMessage);
     } finally {
@@ -114,22 +115,25 @@ function AddUpload({ route, navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar 
+        barStyle={theme.isDark ? "light-content" : "dark-content"} 
+        backgroundColor={theme.colors.background} 
+      />
       <KeyboardAvoidingView 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.header}>
-            <Text style={styles.title}>Add Upload</Text>
-            <Text style={styles.subtitle}>Share student's work, videos, or documents</Text>
+            <Text style={[styles.title, { color: theme.colors.text }]}>Add Upload</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>Share student's work, videos, or documents</Text>
           </View>
 
-          <View style={styles.formContainer}>
+          <View style={[styles.formContainer, { backgroundColor: theme.colors.surface, shadowColor: theme.isDark ? '#000' : '#000' }]}>
             {/* Type Selection */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Upload Type</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Upload Type</Text>
               <View style={styles.typeContainer}>
                 {[
                   { key: 'document', label: 'Document', icon: '📄' },
@@ -140,7 +144,10 @@ function AddUpload({ route, navigation }: Props) {
                     key={item.key}
                     style={[
                       styles.typeButton,
-                      type === item.key && styles.selectedTypeButton,
+                      { 
+                        backgroundColor: type === item.key ? theme.colors.primary + '20' : theme.colors.background,
+                        borderColor: type === item.key ? theme.colors.primary : theme.colors.border
+                      }
                     ]}
                     onPress={() => handleTypeSelect(item.key as any)}
                   >
@@ -148,7 +155,7 @@ function AddUpload({ route, navigation }: Props) {
                     <Text
                       style={[
                         styles.typeLabel,
-                        type === item.key && styles.selectedTypeLabel,
+                        { color: type === item.key ? theme.colors.primary : theme.colors.textSecondary }
                       ]}
                     >
                       {item.label}
@@ -160,14 +167,23 @@ function AddUpload({ route, navigation }: Props) {
 
             {/* File Selection */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Select File</Text>
-              <TouchableOpacity style={styles.fileButton} onPress={handleFilePick}>
-                <Text style={styles.fileButtonText}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Select File</Text>
+              <TouchableOpacity 
+                style={[
+                  styles.fileButton, 
+                  { 
+                    backgroundColor: theme.colors.background,
+                    borderColor: theme.colors.border
+                  }
+                ]} 
+                onPress={handleFilePick}
+              >
+                <Text style={[styles.fileButtonText, { color: theme.colors.textSecondary }]}>
                   {file ? file.fileName || file.name || 'File Selected' : 'Choose File'}
                 </Text>
               </TouchableOpacity>
               {file && (
-                <Text style={styles.fileInfo}>
+                <Text style={[styles.fileInfo, { color: theme.colors.success }]}>
                   {file.fileName || file.name} ({Math.round((file.fileSize || file.size) / 1024)} KB)
                 </Text>
               )}
@@ -175,33 +191,58 @@ function AddUpload({ route, navigation }: Props) {
 
             {/* Upload Details */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Upload Details</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Upload Details</Text>
               
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Title *</Text>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Title *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    { 
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text
+                    }
+                  ]}
                   placeholder="Enter upload title"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Subject</Text>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Subject</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    { 
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text
+                    }
+                  ]}
                   placeholder="Enter subject (optional)"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={subject}
                   onChangeText={setSubject}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Description</Text>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Description</Text>
                 <TextInput
-                  style={[styles.input, styles.textArea]}
+                  style={[
+                    styles.input, 
+                    styles.textArea,
+                    { 
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text
+                    }
+                  ]}
                   placeholder="Enter description (optional)"
+                  placeholderTextColor={theme.colors.textMuted}
                   value={description}
                   onChangeText={setDescription}
                   multiline
@@ -212,7 +253,11 @@ function AddUpload({ route, navigation }: Props) {
             </View>
 
             <TouchableOpacity 
-              style={[styles.submitButton, loading && styles.buttonDisabled]}
+              style={[
+                styles.submitButton, 
+                { backgroundColor: loading ? theme.colors.textMuted : theme.colors.primary },
+                loading && styles.buttonDisabled
+              ]}
               onPress={handleSubmit}
               disabled={loading}
             >
@@ -232,7 +277,6 @@ function AddUpload({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -245,18 +289,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#212529',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6c757d',
   },
   formContainer: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -271,7 +311,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#212529',
     marginBottom: 16,
   },
   typeContainer: {
@@ -285,13 +324,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginHorizontal: 4,
     borderRadius: 12,
-    backgroundColor: '#f8f9fa',
     borderWidth: 2,
-    borderColor: '#e9ecef',
-  },
-  selectedTypeButton: {
-    backgroundColor: '#e3f2fd',
-    borderColor: '#007bff',
   },
   typeIcon: {
     fontSize: 32,
@@ -300,15 +333,9 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6c757d',
-  },
-  selectedTypeLabel: {
-    color: '#007bff',
   },
   fileButton: {
-    backgroundColor: '#f8f9fa',
     borderWidth: 2,
-    borderColor: '#e9ecef',
     borderStyle: 'dashed',
     borderRadius: 12,
     paddingVertical: 20,
@@ -317,12 +344,10 @@ const styles = StyleSheet.create({
   },
   fileButtonText: {
     fontSize: 16,
-    color: '#6c757d',
     fontWeight: '600',
   },
   fileInfo: {
     fontSize: 14,
-    color: '#28a745',
     marginTop: 8,
     textAlign: 'center',
   },
@@ -332,29 +357,23 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#343a40',
     marginBottom: 8,
   },
   input: {
-    borderColor: '#e9ecef',
     borderWidth: 1,
     borderRadius: 12,
-    backgroundColor: '#f8f9fa',
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#212529',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: '#007bff',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#007bff',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -364,7 +383,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: '#6c757d',
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#fff',
