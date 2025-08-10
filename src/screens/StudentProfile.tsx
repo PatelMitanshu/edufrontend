@@ -11,6 +11,10 @@ import {
   ActivityIndicator,
   FlatList,
   TextInput,
+  ActionSheetIOS,
+  Platform,
+  Linking,
+  Modal,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
@@ -33,6 +37,8 @@ function StudentProfile({ route, navigation }: Props) {
   const [selectedFile, setSelectedFile] = useState<Upload | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedStudent, setEditedStudent] = useState<Partial<Student>>({});
+  const [fileOptionsVisible, setFileOptionsVisible] = useState(false);
+  const [pendingFile, setPendingFile] = useState<Upload | null>(null);
   
   const { theme } = useTheme();
 
@@ -68,8 +74,106 @@ function StudentProfile({ route, navigation }: Props) {
   };
 
   const handleFilePress = (upload: Upload) => {
-    setSelectedFile(upload);
-    setFileViewerVisible(true);
+    // For images and videos, directly open in FileViewer
+    if (upload.type === 'image' || upload.type === 'video') {
+      setSelectedFile(upload);
+      setFileViewerVisible(true);
+      return;
+    }
+
+    // For documents, show options
+    setPendingFile(upload);
+    
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Open in App Preview', 'Open in External App'],
+          cancelButtonIndex: 0,
+          title: `How would you like to open "${upload.title}"?`,
+        },
+        (buttonIndex) => {
+          handleFileOpenOption(upload, buttonIndex);
+        }
+      );
+    } else {
+      // For Android, show custom modal
+      setFileOptionsVisible(true);
+    }
+  };
+
+  const handleFileOpenOption = (upload: Upload, optionIndex: number) => {
+    switch (optionIndex) {
+      case 0: // Cancel (iOS only)
+        break;
+      case 1: // Open in App Preview
+        setSelectedFile(upload);
+        setFileViewerVisible(true);
+        break;
+      case 2: // Open in External App
+        Linking.openURL(upload.file.url).catch(() => {
+          Alert.alert('Error', 'Could not open file in external app. Please ensure you have a compatible app installed.');
+        });
+        break;
+    }
+    setFileOptionsVisible(false);
+    setPendingFile(null);
+  };
+
+  const handleFileLongPress = (upload: Upload) => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Delete File'],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 0,
+          title: `"${upload.title}"`,
+          message: 'What would you like to do with this file?',
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            handleDeleteUpload(upload);
+          }
+        }
+      );
+    } else {
+      // For Android, use Alert
+      Alert.alert(
+        'File Options',
+        `What would you like to do with "${upload.title}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => handleDeleteUpload(upload) }
+        ]
+      );
+    }
+  };
+
+  const handleDeleteUpload = (upload: Upload) => {
+    Alert.alert(
+      'Delete Upload',
+      `Are you sure you want to delete "${upload.title}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await uploadService.deleteUpload(upload._id);
+              Alert.alert('Success', 'Upload deleted successfully!');
+              // Refresh the uploads list
+              loadStudentData();
+            } catch (error: any) {
+              const errorMessage = error.response?.data?.message || 'Failed to delete upload. Please try again.';
+              Alert.alert('Error', errorMessage);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleCloseFileViewer = () => {
@@ -77,11 +181,28 @@ function StudentProfile({ route, navigation }: Props) {
     setSelectedFile(null);
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string, mimeType?: string) => {
     switch (type) {
       case 'video': return '🎥';
-      case 'document': return '📄';
       case 'image': return '🖼️';
+      case 'document':
+        if (mimeType) {
+          if (mimeType.includes('pdf')) return '📕';
+          if (mimeType.includes('word') || mimeType.includes('document')) return '📄';
+          if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📊';
+          if (mimeType.includes('excel') || mimeType.includes('spreadsheet') || mimeType.includes('vnd.ms-excel') || mimeType.includes('sheet')) return '📈';
+          if (mimeType.includes('csv')) return '📊';
+          if (mimeType.includes('google-apps')) {
+            if (mimeType.includes('spreadsheet')) return '📈';
+            if (mimeType.includes('document')) return '�';
+            if (mimeType.includes('presentation')) return '�📊';
+            return '📄';
+          }
+          if (mimeType.includes('zip')) return '🗜️';
+          if (mimeType.includes('text')) return '📝';
+          if (mimeType.includes('json') || mimeType.includes('xml')) return '⚙️';
+        }
+        return '📄';
       default: return '📎';
     }
   };
@@ -92,36 +213,47 @@ function StudentProfile({ route, navigation }: Props) {
   };
 
   const renderUploadItem = ({ item }: { item: Upload }) => (
-    <TouchableOpacity
+    <View
       style={[
         tw['mb-3'], 
         tw['p-4'], 
         tw['rounded-xl'], 
         { backgroundColor: theme.colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }
       ]}
-      onPress={() => handleFilePress(item)}
-      activeOpacity={0.7}
     >
-      <View style={[tw['flex-row'], tw['items-center'], tw['mb-2']]}>
-        <Text style={[tw['text-2xl'], tw['mr-3']]}>{getTypeIcon(item.type)}</Text>
-        <View style={[tw['flex-1']]}>
-          <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>{item.title}</Text>
-          <Text style={[tw['text-sm'], tw['font-medium'], { color: theme.colors.primary }]}>{item.type.toUpperCase()}</Text>
-          {item.subject && (
-            <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>Subject: {item.subject}</Text>
-          )}
+      <TouchableOpacity
+        onPress={() => handleFilePress(item)}
+        onLongPress={() => handleFileLongPress(item)}
+        activeOpacity={0.7}
+        style={[tw['mb-3']]}
+      >
+        <View style={[tw['flex-row'], tw['items-center'], tw['mb-2']]}>
+          <Text style={[tw['text-2xl'], tw['mr-3']]}>{getTypeIcon(item.type, item.file.mimeType)}</Text>
+          <View style={[tw['flex-1']]}>
+            <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>{item.title}</Text>
+            <Text style={[tw['text-sm'], tw['font-medium'], { color: theme.colors.primary }]}>{item.type.toUpperCase()}</Text>
+            {item.subject && (
+              <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>Subject: {item.subject}</Text>
+            )}
+          </View>
+          <View style={[tw['px-3'], tw['py-1'], tw['rounded-lg'], { backgroundColor: theme.colors.primary }]}>
+            <Text style={[tw['text-sm'], tw['font-semibold'], { color: theme.colors.surface }]}>
+              {item.type === 'document' 
+                ? (item.file.mimeType.includes('excel') || item.file.mimeType.includes('spreadsheet') || item.file.mimeType.includes('vnd.ms-excel') || item.file.mimeType.includes('sheet')
+                    ? '📱 Open ▼' 
+                    : 'Open ▼')
+                : 'View'}
+            </Text>
+          </View>
         </View>
-        <View style={[tw['px-3'], tw['py-1'], tw['rounded-lg'], { backgroundColor: theme.colors.primary }]}>
-          <Text style={[tw['text-sm'], tw['font-semibold'], { color: theme.colors.surface }]}>View</Text>
-        </View>
-      </View>
-      {item.description && (
-        <Text style={[tw['text-sm'], tw['mb-2'], { color: theme.colors.textSecondary }]}>{item.description}</Text>
-      )}
-      <Text style={[tw['text-xs'], { color: theme.colors.textMuted }]}>
-        {new Date(item.createdAt).toLocaleDateString()}
-      </Text>
-    </TouchableOpacity>
+        {item.description && (
+          <Text style={[tw['text-sm'], tw['mb-2'], { color: theme.colors.textSecondary }]}>{item.description}</Text>
+        )}
+        <Text style={[tw['text-xs'], { color: theme.colors.textMuted }]}>
+          {new Date(item.createdAt).toLocaleDateString()}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 
   const handleEditToggle = () => {
@@ -146,18 +278,43 @@ function StudentProfile({ route, navigation }: Props) {
     try {
       if (!student?._id) return;
       
-      const updateData = {
-        name: editedStudent.name,
-        rollNumber: editedStudent.rollNumber,
-        parentContact: editedStudent.parentContact
-      };
+      console.log('Original student:', student);
+      console.log('Edited student data:', editedStudent);
+      
+      // Only include fields that have been actually edited
+      const updateData: any = {};
+      
+      if (editedStudent.name !== undefined) {
+        updateData.name = editedStudent.name;
+      }
+      
+      if (editedStudent.rollNumber !== undefined) {
+        updateData.rollNumber = editedStudent.rollNumber;
+      }
+      
+      if (editedStudent.parentContact !== undefined) {
+        updateData.parentContact = editedStudent.parentContact;
+      }
+      
+      // Don't send empty update
+      if (Object.keys(updateData).length === 0) {
+        Alert.alert('Info', 'No changes made to update.');
+        setIsEditing(false);
+        return;
+      }
+      
+      console.log('Update data being sent:', updateData);
       
       const updatedStudent = await studentService.updateStudent(student._id, updateData);
       setStudent(updatedStudent.student);
       setIsEditing(false);
+      setEditedStudent({});
       Alert.alert('Success', 'Student profile updated successfully!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update student profile. Please try again.');
+    } catch (error: any) {
+      console.log('Update error:', error);
+      console.log('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || 'Failed to update student profile. Please try again.';
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -478,6 +635,61 @@ function StudentProfile({ route, navigation }: Props) {
           mimeType={selectedFile.file.mimeType}
         />
       )}
+
+      {/* File Options Modal (Android/Cross-platform) */}
+      <Modal
+        visible={fileOptionsVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setFileOptionsVisible(false);
+          setPendingFile(null);
+        }}
+      >
+        <View style={[tw['flex-1'], { justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[tw['p-6'], { backgroundColor: theme.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24 }]}>
+            <Text style={[tw['text-lg'], tw['font-bold'], tw['text-center'], tw['mb-6'], { color: theme.colors.text }]}>
+              How would you like to open "{pendingFile?.title}"?
+            </Text>
+            
+            <TouchableOpacity
+              style={[tw['flex-row'], tw['items-center'], tw['p-4'], tw['mb-2'], tw['rounded-xl'], { borderBottomWidth: 1, borderBottomColor: theme.colors.border }]}
+              onPress={() => pendingFile && handleFileOpenOption(pendingFile, 1)}
+            >
+              <Text style={[tw['text-3xl'], tw['mr-4']]}>📱</Text>
+              <View style={[tw['flex-1']]}>
+                <Text style={[tw['text-base'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>Open in App Preview</Text>
+                <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>
+                  View the file inside the app using Google preview
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[tw['flex-row'], tw['items-center'], tw['p-4'], tw['mb-4'], tw['rounded-xl']]}
+              onPress={() => pendingFile && handleFileOpenOption(pendingFile, 2)}
+            >
+              <Text style={[tw['text-3xl'], tw['mr-4']]}>🚀</Text>
+              <View style={[tw['flex-1']]}>
+                <Text style={[tw['text-base'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>Open in External App</Text>
+                <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>
+                  Open with Excel, Word, or other installed apps
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[tw['py-3'], tw['px-6'], tw['rounded-xl'], tw['items-center'], tw['mt-4'], { backgroundColor: theme.colors.error }]}
+              onPress={() => {
+                setFileOptionsVisible(false);
+                setPendingFile(null);
+              }}
+            >
+              <Text style={[tw['text-base'], tw['font-semibold'], tw['text-white']]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

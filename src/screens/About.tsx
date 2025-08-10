@@ -65,17 +65,49 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, col
   return (
     <Animated.View
       style={[
-        tw['bg-surface'], tw['rounded-3xl'], tw['p-6'], tw['mb-4'], tw['shadow-xl'], tw['border'], tw['border-surface'],
+        tw['rounded-3xl'], tw['p-6'], tw['mb-6'], tw['relative'],
         {
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderColor: 'rgba(255, 255, 255, 0.3)',
+          borderWidth: 1,
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.15,
+          shadowRadius: 20,
+          elevation: 10,
+          overflow: 'hidden',
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         },
       ]}
     >
-      <View style={[tw['w-16'], tw['h-16'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mb-4'], { backgroundColor: color }]}>
-        <Text style={[tw['text-3xl']]}>{icon}</Text>
+      {/* Floating Background Element */}
+      <View style={[
+        {
+          position: 'absolute',
+          top: -10,
+          right: -10,
+          width: 40,
+          height: 40,
+          backgroundColor: color + '20',
+          borderRadius: 20,
+        }
+      ]} />
+      
+      <View style={[
+        tw['w-20'], tw['h-20'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mb-4'],
+        {
+          backgroundColor: color + '30',
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.25,
+          shadowRadius: 15,
+          elevation: 8,
+        }
+      ]}>
+        <Text style={[tw['text-4xl']]}>{icon}</Text>  
       </View>
-      <Text style={[tw['text-xl'], tw['font-bold'], tw['text-primary'], tw['mb-2']]}>
+      <Text style={[tw['text-xl'], tw['font-bold'], tw['text-primary'], tw['mb-3']]}>
         {title}
       </Text>
       <Text style={[tw['text-base'], tw['text-secondary'], tw['leading-relaxed']]}>
@@ -148,10 +180,22 @@ const StatCard: React.FC<StatProps> = ({ number, label, icon, delay }) => {
 
   return (
     <View style={[tw['items-center'], tw['flex-1']]}>
-      <View style={[tw['w-16'], tw['h-16'], tw['bg-blue-100'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mb-3']]}>
+      <View style={[
+        tw['w-20'], tw['h-20'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mb-4'],
+        {
+          backgroundColor: 'rgba(74, 144, 226, 0.15)',
+          shadowColor: '#4A90E2',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 15,
+          elevation: 8,
+          borderWidth: 2,
+          borderColor: 'rgba(74, 144, 226, 0.2)',
+        }
+      ]}>
         <Text style={[tw['text-2xl']]}>{icon}</Text>
       </View>
-      <Text style={[tw['text-3xl'], tw['font-extrabold'], tw['text-blue-600'], tw['mb-1']]}>
+      <Text style={[tw['text-4xl'], tw['font-extrabold'], tw['text-primary'], tw['mb-2']]}>
         {displayNumber}+
       </Text>
       <Text style={[tw['text-sm'], tw['text-secondary'], tw['text-center'], tw['font-medium']]}>
@@ -241,11 +285,20 @@ function AboutScreen() {
       case 'about':
         return (
           <View>
-            {/* Hero Section */}
+            {/* Hero Section with Modern Glassmorphism */}
             <Animated.View
               style={[
-                tw['bg-gradient-blue'], tw['rounded-3xl'], tw['p-4'], tw['mb-6'], tw['items-center'],
+                tw['rounded-3xl'], tw['p-6'], tw['mb-6'], tw['items-center'], tw['relative'],
                 {
+                  backgroundColor: 'rgba(74, 144, 226, 0.15)',
+                  borderColor: 'rgba(74, 144, 226, 0.2)',
+                  borderWidth: 1,
+                  shadowColor: '#4A90E2',
+                  shadowOffset: { width: 0, height: 20 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 25,
+                  elevation: 10,
+                  overflow: 'hidden',
                   opacity: headerAnim,
                   transform: [
                     {
@@ -258,27 +311,103 @@ function AboutScreen() {
                 },
               ]}
             >
-              <View style={[tw['w-24'], tw['h-24'], tw['bg-surface'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mb-4'], tw['shadow-xl']]}>
-                <Text style={[tw['text-4xl']]}>🎓</Text>
+              {/* Floating Background Elements */}
+              <View style={[
+                {
+                  position: 'absolute',
+                  top: -10,
+                  right: -10,
+                  width: 40,
+                  height: 40,
+                  backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                  borderRadius: 20,
+                }
+              ]} />
+              <View style={[
+                {
+                  position: 'absolute',
+                  bottom: -15,
+                  left: -15,
+                  width: 60,
+                  height: 60,
+                  backgroundColor: 'rgba(74, 144, 226, 0.08)',
+                  borderRadius: 30,
+                }
+              ]} />
+              
+              {/* Enhanced Profile Icon with Glow Effect */}
+              <View style={[
+                tw['w-24'], tw['h-24'], tw['bg-surface'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mb-6'],
+                {
+                  width: 112,
+                  height: 112,
+                  shadowColor: '#4A90E2',
+                  shadowOffset: { width: 0, height: 15 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 20,
+                  elevation: 15,
+                  borderWidth: 3,
+                  borderColor: 'rgba(74, 144, 226, 0.2)',
+                }
+              ]}>
+                <Text style={[tw['text-5xl']]}>🎓</Text>
               </View>
-              <Text style={[tw['text-3xl'], tw['font-extrabold'], tw['text-white'], tw['text-center'], tw['mb-2']]}>
+              
+              {/* Enhanced Text with Better Typography */}
+              <Text style={[tw['text-4xl'], tw['font-extrabold'], tw['text-primary'], tw['text-center'], tw['mb-3']]}>
                 EduLearn
               </Text>
-              <Text style={[tw['text-lg'], tw['text-white'], tw['text-center'], tw['mb-4']]}>
+              <Text style={[tw['text-lg'], tw['text-primary'], tw['text-center'], tw['mb-4'], { opacity: 0.8 }]}>
                 Revolutionizing Education Through Technology
               </Text>
-              <Text style={[tw['text-base'], tw['text-white'], tw['text-center'], tw['leading-relaxed']]}>
+              <Text style={[tw['text-base'], tw['text-secondary'], tw['text-center'], tw['leading-relaxed']]}>
                 Empowering teachers and students with innovative tools for modern education
               </Text>
             </Animated.View>
 
-            {/* Mission Section */}
-            <View style={[tw['bg-surface'], tw['rounded-3xl'], tw['p-6'], tw['mb-6'], tw['shadow-lg']]}>
+            {/* Mission Section with Glassmorphism */}
+            <View style={[
+              tw['rounded-3xl'], tw['p-6'], tw['mb-6'], tw['relative'],
+              {
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                borderWidth: 1,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 20,
+                elevation: 8,
+                overflow: 'hidden',
+              }
+            ]}>
+              {/* Decorative Elements */}
+              <View style={[
+                {
+                  position: 'absolute',
+                  top: -5,
+                  left: -5,
+                  width: 30,
+                  height: 30,
+                  backgroundColor: 'rgba(52, 168, 83, 0.1)',
+                  borderRadius: 15,
+                }
+              ]} />
+              
               <View style={[tw['flex-row'], tw['items-center'], tw['mb-4']]}>
-                <View style={[tw['w-12'], tw['h-12'], tw['bg-success'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mr-3']]}>
-                  <Text style={[tw['text-2xl']]}>🎯</Text>
+                <View style={[
+                  tw['w-16'], tw['h-16'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['mr-4'],
+                  {
+                    backgroundColor: 'rgba(52, 168, 83, 0.15)',
+                    shadowColor: '#34a853',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 15,
+                    elevation: 8,
+                  }
+                ]}>
+                  <Text style={[tw['text-3xl']]}>🎯</Text>
                 </View>
-                <Text style={[tw['text-xl'], tw['font-bold'], tw['text-primary']]}>
+                <Text style={[tw['text-2xl'], tw['font-bold'], tw['text-primary']]}>
                   Our Mission
                 </Text>
               </View>
@@ -290,9 +419,36 @@ function AboutScreen() {
               </Text>
             </View>
 
-            {/* Statistics */}
-            <View style={[tw['bg-surface'], tw['rounded-3xl'], tw['p-1'], tw['mb-6'], tw['shadow-lg'] ]}>
-              <Text style={[tw['text-xl'], tw['font-bold'], tw['text-primary'], tw['text-center'], tw['mb-6']]}>
+            {/* Statistics with Enhanced Design */}
+            <View style={[
+              tw['rounded-3xl'], tw['p-6'], tw['mb-6'], tw['relative'],
+              {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: 'rgba(74, 144, 226, 0.15)',
+                borderWidth: 1,
+                shadowColor: '#4A90E2',
+                shadowOffset: { width: 0, height: 15 },
+                shadowOpacity: 0.15,
+                shadowRadius: 25,
+                elevation: 10,
+                overflow: 'hidden',
+              }
+            ]}>
+              {/* Background Gradient Overlay */}
+              <View style={[
+                {
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: 100,
+                  height: 100,
+                  backgroundColor: 'rgba(74, 144, 226, 0.05)',
+                  borderRadius: 50,
+                  transform: [{ translateX: 30 }, { translateY: -30 }],
+                }
+              ]} />
+              
+              <Text style={[tw['text-2xl'], tw['font-bold'], tw['text-primary'], tw['text-center'], tw['mb-6']]}>
                 Our Impact
               </Text>
               <View style={[tw['flex-row'], tw['justify-between']]}>
@@ -308,35 +464,98 @@ function AboutScreen() {
               </View>
             </View>
 
-            {/* Contact Section */}
-            <View style={[tw['bg-surface'], tw['rounded-3xl'], tw['p-2'], tw['shadow-lg']]}>
-              <Text style={[tw['text-xl'], tw['font-bold'], tw['text-primary'], tw['mb-4']]}>
+            {/* Contact Section with Modern Design */}
+            <View style={[
+              tw['rounded-3xl'], tw['p-6'], tw['relative'],
+              {
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                borderWidth: 1,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.12,
+                shadowRadius: 22,
+                elevation: 10,
+                overflow: 'hidden',
+              }
+            ]}>
+              {/* Decorative Background Elements */}
+              <View style={[
+                {
+                  position: 'absolute',
+                  bottom: -10,
+                  right: -10,
+                  width: 50,
+                  height: 50,
+                  backgroundColor: 'rgba(74, 144, 226, 0.08)',
+                  borderRadius: 25,
+                }
+              ]} />
+              
+              <Text style={[tw['text-2xl'], tw['font-bold'], tw['text-primary'], tw['mb-6']]}>
                 Get in Touch
               </Text>
               <View style={[tw['flex-row'], tw['justify-between']]}>
                 <TouchableOpacity
-                  style={[tw['flex-1'], tw['bg-blue-50'], tw['rounded-xl'], tw['p-4'], tw['items-center'], tw['mr-2']]}
+                  style={[
+                    tw['flex-1'], tw['rounded-xl'], tw['p-4'], tw['items-center'], tw['mr-2'],
+                    {
+                      backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                      borderColor: 'rgba(74, 144, 226, 0.2)',
+                      borderWidth: 1,
+                      shadowColor: '#4A90E2',
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 12,
+                      elevation: 6,
+                    }
+                  ]}
                   onPress={() => handleContact('email')}
                   activeOpacity={0.7}
                 >
                   <Text style={[tw['text-2xl'], tw['mb-2']]}>📧</Text>
-                  <Text style={[tw['text-sm'], tw['font-medium'], tw['text-secondary']]}>Email</Text>
+                  <Text style={[tw['text-sm'], tw['font-medium'], tw['text-primary']]}>Email</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[tw['flex-1'], tw['bg-success'], tw['rounded-xl'], tw['p-4'], tw['items-center'], tw['mx-4']]}
+                  style={[
+                    tw['flex-1'], tw['rounded-xl'], tw['p-4'], tw['items-center'],
+                    {
+                      marginHorizontal: 4,
+                      backgroundColor: 'rgba(52, 168, 83, 0.15)',
+                      borderColor: 'rgba(52, 168, 83, 0.25)',
+                      borderWidth: 1,
+                      shadowColor: '#34a853',
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 12,
+                      elevation: 6,
+                    }
+                  ]}
                   onPress={() => handleContact('phone')}
                   activeOpacity={0.7}
                 >
                   <Text style={[tw['text-2xl'], tw['mb-2']]}>📞</Text>
-                  <Text style={[tw['text-sm'], tw['font-medium'], tw['text-white']]}>Call</Text>
+                  <Text style={[tw['text-sm'], tw['font-medium'], tw['text-primary']]}>Call</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[tw['flex-1'], tw['bg-primary-light'], tw['rounded-xl'], tw['p-4'], tw['items-center'], tw['ml-2']]}
+                  style={[
+                    tw['flex-1'], tw['rounded-xl'], tw['p-4'], tw['items-center'], tw['ml-2'],
+                    {
+                      backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                      borderColor: 'rgba(156, 39, 176, 0.2)',
+                      borderWidth: 1,
+                      shadowColor: '#9c27b0',
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 12,
+                      elevation: 6,
+                    }
+                  ]}
                   onPress={() => handleContact('website')}
                   activeOpacity={0.7}
                 >
                   <Text style={[tw['text-2xl'], tw['mb-2']]}>🌐</Text>
-                  <Text style={[tw['text-sm'], tw['font-medium'], tw['text-secondary']]}>Website</Text>
+                  <Text style={[tw['text-sm'], tw['font-medium'], tw['text-primary']]}>Website</Text>
                 </TouchableOpacity>
               </View>
             </View>

@@ -10,6 +10,8 @@ import {
   RefreshControl,
   Dimensions,
   Image,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { CompositeScreenProps } from '@react-navigation/native';
@@ -17,6 +19,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DrawerActions, useFocusEffect } from '@react-navigation/native';
 import { DrawerParamList, RootStackParamList } from '../App';
 import { standardService, Standard } from '../services/standardService';
+import { authService } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { useThemedStyles } from '../utils/themedStyles';
@@ -40,6 +43,8 @@ function Home({ navigation }: Props) {
   useEffect(() => {
     loadTeacherData();
     loadStandards();
+    // Also refresh profile data from server on app start
+    refreshProfileFromServer();
   }, []);
 
   // Add focus listener to refresh profile data
@@ -59,6 +64,23 @@ function Home({ navigation }: Props) {
       }
     } catch (error) {
       // Error loading teacher data, keep defaults
+    }
+  };
+
+  const refreshProfileFromServer = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (token) {
+        const response = await authService.getProfile();
+        // Update AsyncStorage with fresh data
+        await AsyncStorage.setItem('teacherData', JSON.stringify(response.teacher));
+        // Update UI
+        setTeacherName(response.teacher.name);
+        setProfilePicture(response.teacher.profilePicture || null);
+      }
+    } catch (error) {
+      // Silently fail - use cached data
+      console.log('Failed to refresh profile from server:', error);
     }
   };
 
@@ -104,6 +126,46 @@ function Home({ navigation }: Props) {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
+  const handleStandardLongPress = (standard: Standard) => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Delete Standard'],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 0,
+          title: `Delete "${standard.name}"?`,
+          message: 'This action cannot be undone. All divisions and students in this standard will also be deleted.',
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            confirmDeleteStandard(standard);
+          }
+        }
+      );
+    } else {
+      // For Android, use Alert
+      Alert.alert(
+        'Delete Standard',
+        `Are you sure you want to delete "${standard.name}"?\n\nThis action cannot be undone. All divisions and students in this standard will also be deleted.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => confirmDeleteStandard(standard) }
+        ]
+      );
+    }
+  };
+
+  const confirmDeleteStandard = async (standard: Standard) => {
+    try {
+      await standardService.deleteStandard(standard._id);
+      setStandards(standards.filter(s => s._id !== standard._id));
+      Alert.alert('Success', `"${standard.name}" has been deleted successfully.`);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete standard. Please try again.';
+      Alert.alert('Error', errorMessage);
+    }
+  };
+
   const renderStandardCard = ({ item }: { item: Standard }) => (
     <TouchableOpacity
       style={[tw['bg-surface'], tw['rounded-3xl'], tw['mb-4'], tw['shadow-xl'], tw['flex-row'], tw['items-center'], tw['overflow-hidden'], tw['border'], tw['border-surface']]}
@@ -111,6 +173,7 @@ function Home({ navigation }: Props) {
         standardId: item._id, 
         standardName: item.name 
       })}
+      onLongPress={() => handleStandardLongPress(item)}
       activeOpacity={0.7}
     >
       {/* Colorful Left Border */}
@@ -141,20 +204,13 @@ function Home({ navigation }: Props) {
               </Text>
             </View>
           ))}
-          {item.subjects.length > 3 && (
-            <View style={[tw['bg-primary-light'], tw['px-3'], tw['py-1'], tw['rounded-full'], tw['mb-1']]}>
-              <Text style={[tw['text-xs'], tw['text-primary'], tw['font-medium']]}>
-                +{item.subjects.length - 3} more
-              </Text>
-            </View>
-          )}
         </View>
       </View>
       
       {/* Enhanced Arrow */}
       <View style={[tw['px-5'], tw['items-center']]}>
-        <View style={[tw['w-10'], tw['h-10'], tw['bg-primary'], tw['rounded-full'], tw['items-center'], tw['justify-center'], tw['shadow-colored-blue']]}>
-          <Text style={[tw['text-white'], tw['text-lg'], tw['font-bold']]}>→</Text>
+        <View style={[tw['w-10'], tw['h-10'], tw['bg-primary'], tw['rounded-full'], tw['items-center'], tw['justify-center']]}>
+          <Text style={[tw['text-white'], tw['text-lg'], tw['font-bold'], tw['mb-1']]}>→</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -215,13 +271,31 @@ function Home({ navigation }: Props) {
       </View>
 
       {/* Enhanced Title Section */}
-      <View style={[tw['px-5'], tw['py-6'], tw['bg-surface'], tw['mb-2']]}>
-        <Text style={[tw['text-3xl'], tw['font-extrabold'], tw['text-primary'], tw['mb-2'], tw['tracking-wide']]}>
-          Select a Standard
-        </Text>
-        <Text style={[tw['text-base'], tw['text-secondary'], tw['leading-relaxed'], tw['font-light']]}>
-          Choose a standard to manage students and their work
-        </Text>
+      <View style={[tw['px-5'], tw['py-6'], tw['bg-surface'], tw['mb-2'] ]}>
+        <View style={[tw['flex-row'], tw['items-center'], tw['justify-between'], tw['mb-4']]}>
+          <View style={[tw['flex-row'], tw['items-center']]}>
+            <Text style={[tw['text-xl'], tw['font-extrabold'], tw['text-primary'], tw['mb-2'], tw['tracking-wide']]}>
+              Select a Standard
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              tw['bg-primary'],
+              tw['px-4'],
+              tw['py-3'],
+              tw['rounded-xl'],
+              tw['items-center'],
+              tw['shadow-lg'],
+              { marginLeft: 16 }
+            ]}
+            onPress={() => navigation.navigate('AddStandard')}
+            activeOpacity={0.7}
+          >
+            <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
+              ➕ Add Standard
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Standards List */}
@@ -236,12 +310,28 @@ function Home({ navigation }: Props) {
         }
         ListEmptyComponent={
           <View style={[tw['items-center'], tw['py-10']]}>
+            <Text style={[tw['text-4xl'], tw['mb-4']]}>📚</Text>
             <Text style={[tw['text-lg'], tw['font-semibold'], tw['text-secondary'], tw['mb-2']]}>
               No standards available
             </Text>
-            <Text style={[tw['text-sm'], tw['text-muted'], tw['text-center']]}>
-              Contact your administrator to add standards
+            <Text style={[tw['text-sm'], tw['text-muted'], tw['text-center'], tw['mb-6']]}>
+              Create your first standard to start managing students
             </Text>
+            <TouchableOpacity
+              style={[
+                tw['bg-primary'],
+                tw['px-6'],
+                tw['py-3'],
+                tw['rounded-xl'],
+                tw['items-center']
+              ]}
+              onPress={() => navigation.navigate('AddStandard')}
+              activeOpacity={0.7}
+            >
+              <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
+                ➕ Create First Standard
+              </Text>
+            </TouchableOpacity>
           </View>
         }
       />

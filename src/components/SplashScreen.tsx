@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Image,
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -54,8 +55,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         { transform: [{ scale: scaleAnim }] }
       ]}>
         {/* App Logo */}
-        <View style={styles.logoCircle}>
-          <Text style={styles.logoEmoji}>📚</Text>
+        <View style={styles.logoImageContainer}>
+          <Image 
+            source={require('../../assets/logo.png')} 
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
         
         <Text style={styles.appName}>EduLearn</Text>
@@ -86,10 +91,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 60,
   },
+  logoImageContainer: {
+    width: 200,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 12,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
   logoCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -105,6 +129,10 @@ const styles = StyleSheet.create({
   },
   logoEmoji: {
     fontSize: 64,
+  },
+  logoImage: {
+    width: 180,
+    height: 180,
   },
   appName: {
     fontSize: 42,

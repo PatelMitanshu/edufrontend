@@ -71,10 +71,46 @@ export const uploadService = {
     if (data.tags) formData.append('tags', JSON.stringify(data.tags));
     
     // Properly format file for upload based on the file object structure
+    let mimeType = data.file.type || data.file.mimeType;
+    let fileName = data.file.name || data.file.fileName || data.file.originalName || 'upload';
+    
+    // Ensure proper MIME type based on file extension if not provided
+    if (!mimeType || mimeType === 'application/octet-stream') {
+      const extension = fileName.split('.').pop()?.toLowerCase();
+      switch (extension) {
+        case 'xlsx':
+          mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          break;
+        case 'xls':
+          mimeType = 'application/vnd.ms-excel';
+          break;
+        case 'docx':
+          mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          break;
+        case 'doc':
+          mimeType = 'application/msword';
+          break;
+        case 'pptx':
+          mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+          break;
+        case 'ppt':
+          mimeType = 'application/vnd.ms-powerpoint';
+          break;
+        case 'pdf':
+          mimeType = 'application/pdf';
+          break;
+        case 'csv':
+          mimeType = 'text/csv';
+          break;
+        default:
+          mimeType = mimeType || 'application/octet-stream';
+      }
+    }
+    
     const fileData = {
       uri: data.file.uri,
-      type: data.file.type || data.file.mimeType,
-      name: data.file.name || data.file.fileName || data.file.originalName || 'upload',
+      type: mimeType,
+      name: fileName,
     };
     
     formData.append('file', fileData as any);

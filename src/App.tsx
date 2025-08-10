@@ -11,11 +11,25 @@ export type RootStackParamList = {
   Dashboard: undefined;
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
   Profile: undefined;
   StandardDetail: { standardId: string; standardName: string };
+  AddDivision: { standardId: string; standardName: string };
+  DivisionDetail: { 
+    divisionId: string; 
+    divisionName: string; 
+    standardId: string; 
+    standardName: string; 
+  };
+  EditDivision: { divisionId: string };
   StudentProfile: { studentId: string };
-  AddStudent: { standardId: string };
+  AddStudent: { 
+    standardId: string; 
+    divisionId?: string; 
+    divisionName?: string; 
+  };
   AddUpload: { studentId: string };
+  AddStandard: undefined;
 };
 
 export type DrawerParamList = {
@@ -27,13 +41,18 @@ export type DrawerParamList = {
 import Home from './screens/Home';
 import Login from './screens/Login';
 import Register from './screens/Register';
+import ForgotPassword from './screens/ForgotPassword';
 import Profile from './screens/Profile';
 import Settings from './screens/Settings';
-import About from './screens/About';
+import About from './screens/About'
 import StandardDetail from './screens/StandardDetail';
+import AddDivision from './screens/AddDivision';
+import DivisionDetail from './screens/DivisionDetail';
+import EditDivision from './screens/EditDivision';
 import StudentProfile from './screens/StudentProfile';
 import AddStudent from './screens/AddStudent';
 import AddUpload from './screens/AddUpload';
+import AddStandard from './screens/AddStandard';
 import SplashScreen from './components/SplashScreen';
 import LoadingScreen from './components/LoadingScreen';
 import CustomDrawerContent from './components/CustomDrawerContent';
@@ -119,6 +138,7 @@ function App() {
           <Stack.Navigator initialRouteName={initialRoute}>
             <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
             <Stack.Screen name="Register" component={Register} options={{ headerShown: false }} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{ headerShown: false }} />
             <Stack.Screen 
               name="Dashboard" 
               component={DrawerNavigator} 
@@ -164,6 +184,50 @@ function App() {
               options={{ 
                 headerShown: true,
                 title: 'Add Upload',
+                headerStyle: { backgroundColor: '#007BFF' },
+                headerTintColor: '#fff',
+                headerTitleStyle: { fontWeight: 'bold' }
+              }} 
+            />
+            <Stack.Screen 
+              name="AddStandard" 
+              component={AddStandard} 
+              options={{ 
+                headerShown: true,
+                title: 'Add Standard',
+                headerStyle: { backgroundColor: '#007BFF' },
+                headerTintColor: '#fff',
+                headerTitleStyle: { fontWeight: 'bold' }
+              }} 
+            />
+            <Stack.Screen 
+              name="AddDivision" 
+              component={AddDivision} 
+              options={{ 
+                headerShown: true,
+                title: 'Add Division',
+                headerStyle: { backgroundColor: '#007BFF' },
+                headerTintColor: '#fff',
+                headerTitleStyle: { fontWeight: 'bold' }
+              }} 
+            />
+            <Stack.Screen 
+              name="DivisionDetail" 
+              component={DivisionDetail} 
+              options={{ 
+                headerShown: true,
+                title: 'Division Details',
+                headerStyle: { backgroundColor: '#007BFF' },
+                headerTintColor: '#fff',
+                headerTitleStyle: { fontWeight: 'bold' }
+              }} 
+            />
+            <Stack.Screen 
+              name="EditDivision" 
+              component={EditDivision} 
+              options={{ 
+                headerShown: true,
+                title: 'Edit Division',
                 headerStyle: { backgroundColor: '#007BFF' },
                 headerTintColor: '#fff',
                 headerTitleStyle: { fontWeight: 'bold' }

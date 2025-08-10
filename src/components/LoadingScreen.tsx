@@ -7,6 +7,7 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,24 +18,32 @@ interface LoadingScreenProps {
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ 
   message = "Loading EduLearn..." 
 }) => {
+  const { theme } = useTheme();
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.logoContainer}>
         {/* App Logo */}
-        <View style={styles.logoCircle}>
+        <View style={[
+          styles.logoCircle, 
+          { 
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary 
+          }
+        ]}>
           <Text style={styles.logoText}>📚</Text>
         </View>
-        <Text style={styles.appName}>EduLearn</Text>
-        <Text style={styles.tagline}>Education Made Simple</Text>
+        <Text style={[styles.appName, { color: theme.colors.primary }]}>EduLearn</Text>
+        <Text style={[styles.tagline, { color: theme.colors.textSecondary }]}>Education Made Simple</Text>
       </View>
 
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007BFF" />
-        <Text style={styles.loadingText}>{message}</Text>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.text }]}>{message}</Text>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Preparing your learning experience...</Text>
+        <Text style={[styles.footerText, { color: theme.colors.textSecondary }]}>Preparing your learning experience...</Text>
       </View>
     </View>
   );
@@ -43,7 +52,6 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 60,
@@ -57,11 +65,9 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#007BFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: '#007BFF',
     shadowOffset: {
       width: 0,
       height: 8,
@@ -77,13 +83,11 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#007BFF',
     marginBottom: 8,
     textAlign: 'center',
   },
   tagline: {
     fontSize: 16,
-    color: '#6c757d',
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -96,7 +100,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#495057',
     textAlign: 'center',
   },
   footer: {
@@ -104,7 +107,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#adb5bd',
     textAlign: 'center',
   },
 });

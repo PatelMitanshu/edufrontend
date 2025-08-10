@@ -141,6 +141,16 @@ function Login() {
               )}
             </Pressable>
 
+            {/* Forgot Password Link */}
+            <Pressable 
+              style={[{ alignSelf: 'flex-end' }, tw['py-2'], tw['mb-2']]}
+              onPress={() => navigation.navigate('ForgotPassword')}
+            >
+              <Text style={[tw['text-primary'], tw['text-sm'], tw['font-medium'], { textDecorationLine: 'underline' }]}>
+                Forgot Password?
+              </Text>
+            </Pressable>
+
             {/* Enhanced Divider */}
             <View style={[tw['flex-row'], tw['items-center'], tw['my-6']]}>
               <View style={[tw['flex-1'], tw['h-px'], tw['bg-gray-200']]} />

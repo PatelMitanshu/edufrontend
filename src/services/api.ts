@@ -1,19 +1,14 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { CURRENT_API_ENDPOINT } from '../config/network';
 
-// API Configuration for Production
-// Using live server hosted on Render.com
+// API Configuration for Development
+// Using network configuration from config/network.ts
 
-// Production API URL
+// Development API URL - automatically set based on your network config
 const getAPIBaseURL = () => {
-  // Live server URL
-  return 'https://edulearnappbackend.onrender.com/api';
-  
-  // For local development, use one of the following:
-  // For physical devices: 'http://YOUR_IP:3000/api'
-  // For Android emulator: 'http://10.0.2.2:3000/api'
-  // For iOS simulator: 'http://localhost:3000/api'
+  return CURRENT_API_ENDPOINT;
 };
 
 const API_BASE_URL = getAPIBaseURL();

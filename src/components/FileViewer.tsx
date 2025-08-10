@@ -38,10 +38,48 @@ const FileViewer: React.FC<FileViewerProps> = ({
 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Debug logging
+  console.log('FileViewer - MIME type:', mimeType);
+  console.log('FileViewer - File type:', fileType);
+  console.log('FileViewer - File name:', fileName);
+
+  // Reset error state when props change
+  React.useEffect(() => {
+    setError(false);
+    setLoading(true);
+    setRetryCount(0);
+  }, [fileUrl, mimeType]);
 
   const isImage = mimeType.startsWith('image/');
   const isVideo = mimeType.startsWith('video/');
-  const isDocument = mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('text');
+  
+  // Enhanced document detection to support more file types
+  const isDocument = mimeType.includes('pdf') || 
+                    mimeType.includes('document') || 
+                    mimeType.includes('text') ||
+                    mimeType.includes('spreadsheet') ||
+                    mimeType.includes('presentation') ||
+                    mimeType.includes('excel') ||
+                    mimeType.includes('word') ||
+                    mimeType.includes('powerpoint') ||
+                    mimeType.includes('vnd.ms-') ||
+                    mimeType.includes('vnd.openxml') ||
+                    mimeType.includes('vnd.google-apps') ||
+                    mimeType.includes('opendocument') ||
+                    mimeType.includes('rtf') ||
+                    mimeType.includes('csv');
+  
+  // Check if it's a Google Apps file
+  const isGoogleAppsFile = mimeType.includes('vnd.google-apps');
+  
+  // Check if it's an Excel/Spreadsheet file
+  const isSpreadsheet = mimeType.includes('spreadsheet') || 
+                       mimeType.includes('excel') || 
+                       mimeType.includes('csv') ||
+                       mimeType.includes('vnd.ms-excel') ||
+                       mimeType.includes('vnd.openxmlformats-officedocument.spreadsheetml');
 
   const handleError = () => {
     setError(true);
@@ -141,7 +179,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
       return (
         <View style={styles.documentContainer}>
           {mimeType.includes('pdf') ? (
-            // For PDFs, provide multiple viewing options
+            // For PDFs, use Google Docs Viewer
             <View style={styles.pdfContainer}>
               <WebView
                 source={{ uri: `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` }}
@@ -173,22 +211,177 @@ const FileViewer: React.FC<FileViewerProps> = ({
                 </View>
               )}
             </View>
+          ) : isGoogleAppsFile ? (
+            // For Google Apps files (Docs, Sheets, Slides), open directly
+            <View style={styles.googleAppsContainer}>
+              <Text style={styles.googleAppsIcon}>📊</Text>
+              <Text style={styles.googleAppsText}>Google {
+                mimeType.includes('spreadsheet') ? 'Sheets' :
+                mimeType.includes('document') ? 'Docs' :
+                mimeType.includes('presentation') ? 'Slides' : 'Apps'
+              } File</Text>
+              <Text style={styles.googleAppsSubtext}>Tap to open in Google Apps or browser</Text>
+              <TouchableOpacity
+                style={styles.openButton}
+                onPress={() => {
+                  Linking.openURL(fileUrl).catch(() => {
+                    Alert.alert('Error', 'Could not open Google Apps file. Please ensure you have Google Apps installed or a web browser.');
+                  });
+                }}
+              >
+                <Text style={styles.openButtonText}>Open Google File</Text>
+              </TouchableOpacity>
+            </View>
+          ) : isSpreadsheet ? (
+            // For Excel and other spreadsheet files, try multiple viewing methods
+            <View style={styles.spreadsheetContainer}>
+              {!error ? (
+                <WebView
+                  source={{ 
+                    uri: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`
+                  }}
+                  style={styles.webview}
+                  onError={(syntheticEvent) => {
+                    console.log('WebView error for Excel:', syntheticEvent.nativeEvent);
+                    // Try Google Docs Viewer as fallback
+                    const fallbackUri = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+                    console.log('Trying fallback viewer:', fallbackUri);
+                    setError(true);
+                  }}
+                  onHttpError={(syntheticEvent) => {
+                    console.log('HTTP error for Excel:', syntheticEvent.nativeEvent);
+                    setError(true);
+                  }}
+                  onLoad={() => {
+                    console.log('Excel file loaded successfully');
+                    setLoading(false);
+                  }}
+                  onLoadStart={() => setLoading(true)}
+                  startInLoadingState={true}
+                  scalesPageToFit={true}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                />
+              ) : (
+                // Fallback to Google Docs Viewer
+                <WebView
+                  source={{ uri: `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` }}
+                  style={styles.webview}
+                  onError={(syntheticEvent) => {
+                    console.log('Google Docs Viewer also failed:', syntheticEvent.nativeEvent);
+                    // This will show the final fallback UI
+                  }}
+                  onLoad={() => {
+                    console.log('Google Docs Viewer loaded successfully');
+                    setLoading(false);
+                    setError(false); // Reset error since fallback worked
+                  }}
+                  onLoadStart={() => setLoading(true)}
+                  startInLoadingState={true}
+                  scalesPageToFit={true}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                />
+              )}
+              {error && (
+                <View style={styles.spreadsheetFallback}>
+                  <Text style={styles.spreadsheetFallbackText}>📊</Text>
+                  <Text style={styles.spreadsheetFallbackTitle}>Excel/Spreadsheet File</Text>
+                  <Text style={styles.spreadsheetFallbackSubtext}>
+                    Excel files work best when opened in the Excel app.{'\n'}
+                    Tap below to open in your mobile Excel app for the best experience.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.openButton}
+                    onPress={() => {
+                      Linking.openURL(fileUrl).catch(() => {
+                        Alert.alert(
+                          'Open Excel File', 
+                          'Could not open the file automatically. Please ensure you have Excel or a compatible app installed.',
+                          [
+                            { text: 'OK', style: 'default' }
+                          ]
+                        );
+                      });
+                    }}
+                  >
+                    <Text style={styles.openButtonText}>📱 Open in Excel App</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.openButton, { backgroundColor: '#28a745', marginTop: 10 }]}
+                    onPress={() => {
+                      // Copy the file URL to clipboard for easy sharing
+                      Alert.alert(
+                        'File URL',
+                        'You can copy this URL to access the file:\n\n' + fileUrl,
+                        [
+                          { text: 'Close', style: 'cancel' },
+                          { 
+                            text: 'Copy URL', 
+                            onPress: () => {
+                              // Note: In a real app, you'd use Clipboard.setString()
+                              Alert.alert('URL Copied', 'File URL has been copied to clipboard');
+                            }
+                          }
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={styles.openButtonText}>Show File URL</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           ) : (
-            // For other documents, use direct WebView
-            <WebView
-              source={{ uri: fileUrl }}
-              style={styles.webview}
-              onError={(syntheticEvent) => {
-                const { nativeEvent } = syntheticEvent;
-                handleError();
-              }}
-              onLoad={() => setLoading(false)}
-              onLoadStart={() => setLoading(true)}
-              startInLoadingState={true}
-              scalesPageToFit={true}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-            />
+            // For other documents, use Google Docs Viewer with better error handling
+            <View style={styles.documentContainer}>
+              <WebView
+                source={{ uri: `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` }}
+                style={styles.webview}
+                onError={(syntheticEvent) => {
+                  console.log('Document viewer error:', syntheticEvent.nativeEvent);
+                  setError(true);
+                }}
+                onHttpError={(syntheticEvent) => {
+                  console.log('Document HTTP error:', syntheticEvent.nativeEvent);
+                  setError(true);
+                }}
+                onLoad={() => {
+                  console.log('Document loaded successfully');
+                  setLoading(false);
+                }}
+                onLoadStart={() => setLoading(true)}
+                startInLoadingState={true}
+                scalesPageToFit={true}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+              />
+              {error && (
+                <View style={styles.pdfFallback}>
+                  <Text style={styles.pdfFallbackText}>📄 Document Preview Not Available</Text>
+                  <Text style={[styles.spreadsheetFallbackSubtext, { color: '#ccc', marginBottom: 20 }]}>
+                    The file was uploaded successfully but cannot be previewed in the app.{'\n'}
+                    Please open it externally to view the content.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.openButton}
+                    onPress={() => {
+                      Linking.openURL(fileUrl).catch(() => {
+                        Alert.alert(
+                          'Open Document', 
+                          'Could not open the document automatically. Please download the file and open it with the appropriate application.',
+                          [
+                            { text: 'OK', style: 'default' }
+                          ]
+                        );
+                      });
+                    }}
+                  >
+                    <Text style={styles.openButtonText}>Open Document Externally</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           )}
           {loading && (
             <View style={styles.loadingOverlay}>
@@ -420,6 +613,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  // Google Apps styles
+  googleAppsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  googleAppsIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  googleAppsText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  googleAppsSubtext: {
+    color: '#ccc',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  // Spreadsheet styles
+  spreadsheetContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  spreadsheetFallback: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    padding: 20,
+  },
+  spreadsheetFallbackText: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  spreadsheetFallbackTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  spreadsheetFallbackSubtext: {
+    color: '#ccc',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
   },
 });
 

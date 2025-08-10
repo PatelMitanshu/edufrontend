@@ -54,16 +54,84 @@ function AddUpload({ route, navigation }: Props) {
       );
     } else if (type === 'document') {
       pick({
-        type: [types.pdf, types.doc, types.docx],
+        type: [
+          types.pdf, 
+          types.doc, 
+          types.docx, 
+          types.ppt, 
+          types.pptx,
+          types.xls,
+          types.xlsx,
+          types.csv,
+          types.plainText,
+          types.zip,
+          // Microsoft Office MIME types
+          'application/vnd.ms-excel',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.ms-word',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          // Open Document formats
+          'application/vnd.oasis.opendocument.text',
+          'application/vnd.oasis.opendocument.spreadsheet',
+          'application/vnd.oasis.opendocument.presentation',
+          // Other formats
+          'application/rtf',
+          'application/json',
+          'application/xml',
+          'text/xml',
+          'text/csv',
+          // Additional spreadsheet formats
+          'application/x-excel',
+          'application/x-msexcel',
+          // Allow all files as fallback
+          types.allFiles,
+        ],
         allowMultiSelection: false,
+        copyTo: 'documentDirectory', // This helps with accessing the file
+        mode: 'open', // Ensure we can open the files
       })
         .then((result) => {
           if (result && result.length > 0) {
-            setFile(result[0]);
+            const file = result[0];
+            console.log('Document picked:', file);
+            console.log('MIME type:', file.type);
+            console.log('File name:', file.name);
+            console.log('File URI:', file.uri);
+            
+            // Special handling for files without proper MIME types
+            if (!file.type || file.type === 'application/octet-stream') {
+              const extension = file.name?.split('.').pop()?.toLowerCase();
+              console.log('File extension:', extension);
+              
+              // Guess MIME type from extension
+              let guessedType = file.type;
+              if (extension === 'xlsx') guessedType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+              else if (extension === 'xls') guessedType = 'application/vnd.ms-excel';
+              else if (extension === 'docx') guessedType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+              else if (extension === 'doc') guessedType = 'application/vnd.ms-word';
+              else if (extension === 'pptx') guessedType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+              else if (extension === 'ppt') guessedType = 'application/vnd.ms-powerpoint';
+              else if (extension === 'pdf') guessedType = 'application/pdf';
+              else if (extension === 'csv') guessedType = 'text/csv';
+              
+              if (guessedType !== file.type) {
+                console.log('Guessed MIME type:', guessedType);
+                setFile({ ...file, type: guessedType });
+              } else {
+                setFile(file);
+              }
+            } else {
+              setFile(file);
+            }
           }
         })
         .catch((err) => {
-          // Document picker cancelled or error occurred
+          if (err.message !== 'User canceled document picker') {
+            console.log('Document picker error:', err);
+            Alert.alert('Error', 'Failed to pick document. Please try again.');
+          }
         });
     }
   };
@@ -76,6 +144,18 @@ function AddUpload({ route, navigation }: Props) {
 
     if (!file) {
       Alert.alert('Error', 'Please select a file');
+      return;
+    }
+
+    // Special handling for Google Sheets/Docs URLs
+    if (file.uri && (file.uri.includes('docs.google.com') || file.uri.includes('drive.google.com'))) {
+      Alert.alert(
+        'Google Files Notice',
+        'Google Sheets and Docs need to be downloaded first and then uploaded. Please:\n\n1. Open the Google file\n2. Go to File > Download\n3. Choose a format (Excel, PDF, etc.)\n4. Upload the downloaded file',
+        [
+          { text: 'OK', style: 'default' }
+        ]
+      );
       return;
     }
 
@@ -186,6 +266,39 @@ function AddUpload({ route, navigation }: Props) {
                 <Text style={[styles.fileInfo, { color: theme.colors.success }]}>
                   {file.fileName || file.name} ({Math.round((file.fileSize || file.size) / 1024)} KB)
                 </Text>
+              )}
+              
+              {/* Supported formats info */}
+              {type === 'document' && (
+                <View style={[styles.supportedFormats, { backgroundColor: theme.colors.primary + '10', marginTop: 8 }]}>
+                  <Text style={[styles.supportedFormatsTitle, { color: theme.colors.primary }]}>📋 Supported Document Types:</Text>
+                  <Text style={[styles.supportedFormatsText, { color: theme.colors.textSecondary }]}>
+                    PDF, Word (.doc, .docx), PowerPoint (.ppt, .pptx), Excel (.xls, .xlsx), 
+                    CSV, Text files, RTF, OpenDocument formats, ZIP archives, JSON, XML
+                  </Text>
+                  <View style={{ marginTop: 8 }}>
+                    <Text style={[styles.supportedFormatsTitle, { color: '#ff9500', fontSize: 12 }]}>⚠️ For Google Files:</Text>
+                    <Text style={[styles.supportedFormatsText, { color: theme.colors.textSecondary, fontSize: 11 }]}>
+                      Google Sheets/Docs must be downloaded first (File → Download → Excel/Word/PDF) then uploaded
+                    </Text>
+                  </View>
+                </View>
+              )}
+              {type === 'image' && (
+                <View style={[styles.supportedFormats, { backgroundColor: theme.colors.primary + '10', marginTop: 8 }]}>
+                  <Text style={[styles.supportedFormatsTitle, { color: theme.colors.primary }]}>🖼️ Supported Image Types:</Text>
+                  <Text style={[styles.supportedFormatsText, { color: theme.colors.textSecondary }]}>
+                    JPEG, JPG, PNG, GIF, WebP
+                  </Text>
+                </View>
+              )}
+              {type === 'video' && (
+                <View style={[styles.supportedFormats, { backgroundColor: theme.colors.primary + '10', marginTop: 8 }]}>
+                  <Text style={[styles.supportedFormatsTitle, { color: theme.colors.primary }]}>🎥 Supported Video Types:</Text>
+                  <Text style={[styles.supportedFormatsText, { color: theme.colors.textSecondary }]}>
+                    MP4, AVI, MOV, QuickTime, WebM
+                  </Text>
+                </View>
               )}
             </View>
 
@@ -369,6 +482,21 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     textAlignVertical: 'top',
+  },
+  supportedFormats: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  supportedFormatsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  supportedFormatsText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   submitButton: {
     paddingVertical: 16,

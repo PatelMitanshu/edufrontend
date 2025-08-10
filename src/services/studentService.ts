@@ -9,6 +9,11 @@ export interface Student {
     description?: string;
     subjects: string[];
   };
+  division: {
+    _id: string;
+    name: string;
+    fullName: string;
+  };
   rollNumber?: string;
   dateOfBirth?: string;
   parentContact?: {
@@ -32,6 +37,7 @@ export interface Student {
 export interface CreateStudentData {
   name: string;
   standard: string;
+  division: string;
   rollNumber?: string;
   dateOfBirth?: string;
   parentContact?: {
@@ -55,6 +61,11 @@ export const studentService = {
 
   async getStudentsByStandard(standardId: string): Promise<{ students: Student[] }> {
     const response = await api.get(`/students/by-standard/${standardId}`);
+    return response.data;
+  },
+
+  async getStudentsByDivision(divisionId: string): Promise<{ students: Student[] }> {
+    const response = await api.get(`/students/by-division/${divisionId}`);
     return response.data;
   },
 
