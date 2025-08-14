@@ -7,6 +7,7 @@ import {
   Alert,
   PanResponder,
   Animated,
+  Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -48,7 +49,6 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => isLongPressActive, // Only allow movement after long press
         onPanResponderGrant: (evt) => {
-          console.log('Gesture started, waiting for long press');
           
           // Clear any existing timer
           if (longPressTimer.current) {
@@ -57,7 +57,6 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           
           // Start long press timer (1000ms = 1 second for longer selection time)
           longPressTimer.current = setTimeout(() => {
-            console.log('Long press activated - drag mode enabled');
             setIsLongPressActive(true);
             setIsDragging(true);
             
@@ -74,13 +73,11 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
         onPanResponderMove: (_, gestureState) => {
           // Only allow movement if long press is active
           if (isLongPressActive) {
-            console.log('Moving with dy:', gestureState.dy);
             // Make the container follow finger movement
             dragY.setValue(gestureState.dy);
           }
         },
         onPanResponderRelease: (_, gestureState) => {
-          console.log('Gesture released with dy:', gestureState.dy);
           
           // Clear the long press timer
           if (longPressTimer.current) {
@@ -90,7 +87,6 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           
           // If long press was not activated, just reset (no profile opening)
           if (!isLongPressActive) {
-            console.log('Short press - no action');
             return;
           }
           
@@ -100,8 +96,7 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           
           // If it was just a small movement during long press, don't change position
           if (Math.abs(gestureState.dy) < 40) {
-            console.log('Drag distance too small, no position change');
-            // Just animate back without position change
+                        // Just animate back without position change
             Animated.parallel([
               Animated.spring(dragY, {
                 toValue: 0,
@@ -121,22 +116,15 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           // Calculate target position based on drag distance
           const itemHeight = 120; // Standard item height
           const dragDistance = gestureState.dy;
-          console.log('Release with drag distance:', dragDistance);
           
           // Less sensitive position calculation for single position moves
           const positionChange = Math.round(dragDistance / (itemHeight * 0.8)); // Less sensitive
-          console.log('Position change calculated:', positionChange);
           
           let newIndex = index + positionChange;
           newIndex = Math.max(0, Math.min(students.length - 1, newIndex));
           
-          console.log('Moving from index', index, 'to index', newIndex);
-          
           if (newIndex !== index) {
-            console.log('Calling moveStudentToPosition');
             moveStudentToPosition(student, newIndex);
-          } else {
-            console.log('No position change needed');
           }
           
           // Animate back to original position and scale
@@ -155,9 +143,7 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           ]).start();
         },
         onPanResponderTerminate: () => {
-          console.log('Gesture terminated');
-          
-          // Clear the long press timer
+                    // Clear the long press timer
           if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
@@ -222,9 +208,17 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           tw['mr-4'],
           { backgroundColor: theme.colors.primary }
         ]}>
-          <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
-            {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-          </Text>
+          {student.profilePicture?.url ? (
+            <Image
+              source={{ uri: student.profilePicture.url }}
+              style={[tw['w-12'], tw['h-12'], tw['rounded-full']]}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
+              {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+            </Text>
+          )}
         </View>
         <View style={[tw['flex-1']]}>
           <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>
@@ -363,8 +357,7 @@ export default function DivisionDetail({ route, navigation }: Props) {
       }));
       await AsyncStorage.setItem(`student_positions_${divisionId}`, JSON.stringify(positions));
     } catch (error) {
-      console.log('Error saving student positions:', error);
-    }
+          }
   };
 
   const loadStudentPositions = async (students: Student[]) => {
@@ -380,18 +373,14 @@ export default function DivisionDetail({ route, navigation }: Props) {
         return sortedStudents;
       }
     } catch (error) {
-      console.log('Error loading student positions:', error);
-    }
+          }
     return students;
   };
 
   const moveStudentToPosition = async (student: Student, newPosition: number) => {
-    console.log('moveStudentToPosition called:', student.name, 'to position', newPosition);
     const currentIndex = students.findIndex(s => s._id === student._id);
-    console.log('Current index:', currentIndex, 'New position:', newPosition);
     
     if (currentIndex === newPosition) {
-      console.log('No change needed, same position');
       return;
     }
 
@@ -399,10 +388,8 @@ export default function DivisionDetail({ route, navigation }: Props) {
     const [movedStudent] = newStudents.splice(currentIndex, 1);
     newStudents.splice(newPosition, 0, movedStudent);
     
-    console.log('Updated student order:', newStudents.map(s => s.name));
     setStudents(newStudents);
     await saveStudentPositions(newStudents);
-    console.log('Position change completed');
   };
 
   const renderStudentCard = ({ item, index }: { item: Student, index: number }) => (

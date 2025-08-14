@@ -1,12 +1,16 @@
 // Network Configuration Utility
 // This file helps you quickly switch between different API endpoints
 
-// Your computer's current IP address: 192.168.1.3
-// Device being used: Physical Android device (RMX3511)
+// Your computer's current IP addresses:
+// WiFi Network: 192.168.1.3 (Main network - use this if device is on same WiFi)
+// Hotspot/Tethering: 192.168.137.1 (Use this if device connects via hotspot/USB tethering)
 
 export const API_ENDPOINTS = {
-  // For physical devices on the same network
-  PHYSICAL_DEVICE: 'http://192.168.1.3:3000',
+  // For physical devices on the same WiFi network
+  PHYSICAL_DEVICE_WIFI: 'http://192.168.1.3:3000',
+  
+  // For physical devices connected via hotspot/USB tethering  
+  PHYSICAL_DEVICE_HOTSPOT: 'http://192.168.137.1:3000',
   
   // For Android emulator
   ANDROID_EMULATOR: 'http://10.0.2.2:3000',
@@ -21,7 +25,7 @@ export const API_ENDPOINTS = {
   PRODUCTION: 'https://edulearnappbackend.onrender.com'
 };
 
-// Current active endpoint
+// Current active endpoint - Try WIFI first, if it doesn't work, try HOTSPOT
 export const CURRENT_API_ENDPOINT = API_ENDPOINTS.PRODUCTION;
 
 // Helper function to detect platform and return appropriate endpoint

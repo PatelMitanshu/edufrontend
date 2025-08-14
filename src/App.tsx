@@ -66,7 +66,6 @@ import LoadingScreen from './components/LoadingScreen';
 import CustomDrawerContent from './components/CustomDrawerContent';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator<DrawerParamList>();
 

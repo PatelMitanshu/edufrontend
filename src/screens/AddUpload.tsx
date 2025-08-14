@@ -95,17 +95,10 @@ function AddUpload({ route, navigation }: Props) {
         .then((result) => {
           if (result && result.length > 0) {
             const file = result[0];
-            console.log('Document picked:', file);
-            console.log('MIME type:', file.type);
-            console.log('File name:', file.name);
-            console.log('File URI:', file.uri);
-            
-            // Special handling for files without proper MIME types
+                                                            // Special handling for files without proper MIME types
             if (!file.type || file.type === 'application/octet-stream') {
               const extension = file.name?.split('.').pop()?.toLowerCase();
-              console.log('File extension:', extension);
-              
-              // Guess MIME type from extension
+                            // Guess MIME type from extension
               let guessedType = file.type;
               if (extension === 'xlsx') guessedType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
               else if (extension === 'xls') guessedType = 'application/vnd.ms-excel';
@@ -117,8 +110,7 @@ function AddUpload({ route, navigation }: Props) {
               else if (extension === 'csv') guessedType = 'text/csv';
               
               if (guessedType !== file.type) {
-                console.log('Guessed MIME type:', guessedType);
-                setFile({ ...file, type: guessedType });
+                                setFile({ ...file, type: guessedType });
               } else {
                 setFile(file);
               }
@@ -129,8 +121,7 @@ function AddUpload({ route, navigation }: Props) {
         })
         .catch((err) => {
           if (err.message !== 'User canceled document picker') {
-            console.log('Document picker error:', err);
-            Alert.alert('Error', 'Failed to pick document. Please try again.');
+                        Alert.alert('Error', 'Failed to pick document. Please try again.');
           }
         });
     }

@@ -41,11 +41,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   const [retryCount, setRetryCount] = useState(0);
 
   // Debug logging
-  console.log('FileViewer - MIME type:', mimeType);
-  console.log('FileViewer - File type:', fileType);
-  console.log('FileViewer - File name:', fileName);
-
-  // Reset error state when props change
+        // Reset error state when props change
   React.useEffect(() => {
     setError(false);
     setLoading(true);
@@ -242,19 +238,15 @@ const FileViewer: React.FC<FileViewerProps> = ({
                   }}
                   style={styles.webview}
                   onError={(syntheticEvent) => {
-                    console.log('WebView error for Excel:', syntheticEvent.nativeEvent);
-                    // Try Google Docs Viewer as fallback
+                                        // Try Google Docs Viewer as fallback
                     const fallbackUri = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
-                    console.log('Trying fallback viewer:', fallbackUri);
-                    setError(true);
+                                        setError(true);
                   }}
                   onHttpError={(syntheticEvent) => {
-                    console.log('HTTP error for Excel:', syntheticEvent.nativeEvent);
-                    setError(true);
+                                        setError(true);
                   }}
                   onLoad={() => {
-                    console.log('Excel file loaded successfully');
-                    setLoading(false);
+                                        setLoading(false);
                   }}
                   onLoadStart={() => setLoading(true)}
                   startInLoadingState={true}
@@ -268,12 +260,10 @@ const FileViewer: React.FC<FileViewerProps> = ({
                   source={{ uri: `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` }}
                   style={styles.webview}
                   onError={(syntheticEvent) => {
-                    console.log('Google Docs Viewer also failed:', syntheticEvent.nativeEvent);
-                    // This will show the final fallback UI
+                                        // This will show the final fallback UI
                   }}
                   onLoad={() => {
-                    console.log('Google Docs Viewer loaded successfully');
-                    setLoading(false);
+                                        setLoading(false);
                     setError(false); // Reset error since fallback worked
                   }}
                   onLoadStart={() => setLoading(true)}
@@ -339,16 +329,13 @@ const FileViewer: React.FC<FileViewerProps> = ({
                 source={{ uri: `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` }}
                 style={styles.webview}
                 onError={(syntheticEvent) => {
-                  console.log('Document viewer error:', syntheticEvent.nativeEvent);
-                  setError(true);
+                                    setError(true);
                 }}
                 onHttpError={(syntheticEvent) => {
-                  console.log('Document HTTP error:', syntheticEvent.nativeEvent);
-                  setError(true);
+                                    setError(true);
                 }}
                 onLoad={() => {
-                  console.log('Document loaded successfully');
-                  setLoading(false);
+                                    setLoading(false);
                 }}
                 onLoadStart={() => setLoading(true)}
                 startInLoadingState={true}

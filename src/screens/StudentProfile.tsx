@@ -15,7 +15,9 @@ import {
   Platform,
   Linking,
   Modal,
+  Image,
 } from 'react-native';
+import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType } from 'react-native-image-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { studentService, Student } from '../services/studentService';
@@ -40,6 +42,7 @@ function StudentProfile({ route, navigation }: Props) {
   const [editedStudent, setEditedStudent] = useState<Partial<Student>>({});
   const [fileOptionsVisible, setFileOptionsVisible] = useState(false);
   const [pendingFile, setPendingFile] = useState<Upload | null>(null);
+  const [profileImageUploading, setProfileImageUploading] = useState(false);
   
   // MCQ Test statistics state
   const [mcqStats, setMcqStats] = useState({
@@ -329,9 +332,6 @@ function StudentProfile({ route, navigation }: Props) {
     try {
       if (!student?._id) return;
       
-      console.log('Original student:', student);
-      console.log('Edited student data:', editedStudent);
-      
       // Only include fields that have been actually edited
       const updateData: any = {};
       
@@ -354,16 +354,12 @@ function StudentProfile({ route, navigation }: Props) {
         return;
       }
       
-      console.log('Update data being sent:', updateData);
-      
-      const updatedStudent = await studentService.updateStudent(student._id, updateData);
+                  const updatedStudent = await studentService.updateStudent(student._id, updateData);
       setStudent(updatedStudent.student);
       setIsEditing(false);
       setEditedStudent({});
       Alert.alert('Success', 'Student profile updated successfully!');
     } catch (error: any) {
-      console.log('Update error:', error);
-      console.log('Error response:', error.response?.data);
       const errorMessage = error.response?.data?.message || 'Failed to update student profile. Please try again.';
       Alert.alert('Error', errorMessage);
     }
@@ -372,6 +368,92 @@ function StudentProfile({ route, navigation }: Props) {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedStudent({});
+  };
+
+  const handleProfilePictureUpload = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Library'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            openCamera();
+          } else if (buttonIndex === 2) {
+            openImageLibrary();
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        'Select Profile Picture',
+        'Choose an option',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Take Photo', onPress: openCamera },
+          { text: 'Choose from Library', onPress: openImageLibrary },
+        ]
+      );
+    }
+  };
+
+  const openCamera = () => {
+    const options = {
+      mediaType: 'photo' as MediaType,
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 0.8 as const,
+    };
+
+    launchCamera(options, handleImageResponse);
+  };
+
+  const openImageLibrary = () => {
+    const options = {
+      mediaType: 'photo' as MediaType,
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+      quality: 0.8 as const,
+    };
+
+    launchImageLibrary(options, handleImageResponse);
+  };
+
+  const handleImageResponse = (response: ImagePickerResponse) => {
+    if (response.didCancel || response.errorMessage) {
+      return;
+    }
+
+    if (response.assets && response.assets[0]) {
+      uploadProfilePicture(response.assets[0]);
+    }
+  };
+
+  const uploadProfilePicture = async (asset: any) => {
+    if (!student?._id) return;
+
+    try {
+      setProfileImageUploading(true);
+      
+      const formData = new FormData();
+      formData.append('profilePicture', {
+        uri: asset.uri,
+        type: asset.type,
+        name: asset.fileName || 'profile.jpg',
+      } as any);
+
+      const updatedStudent = await studentService.uploadProfilePicture(student._id, formData);
+      setStudent(updatedStudent.student);
+      Alert.alert('Success', 'Profile picture updated successfully!');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to upload profile picture. Please try again.';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setProfileImageUploading(false);
+    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -425,19 +507,51 @@ function StudentProfile({ route, navigation }: Props) {
         {/* Student Info Card */}
         <View style={[tw['m-4'], tw['p-6'], tw['rounded-xl'], { backgroundColor: theme.colors.surface }]}>
           <View style={[tw['flex-row'], tw['items-center'], tw['mb-4']]}>
-            <View style={[
-              tw['w-16'], 
-              tw['h-16'], 
-              tw['rounded-full'], 
-              tw['items-center'], 
-              tw['justify-center'], 
-              tw['mr-4'],
-              { backgroundColor: theme.colors.primary }
-            ]}>
-              <Text style={[tw['text-xl'], tw['font-bold'], { color: theme.colors.surface }]}>
-                {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-              </Text>
-            </View>
+            <TouchableOpacity
+              onPress={isEditing ? handleProfilePictureUpload : undefined}
+              style={[
+                tw['w-16'], 
+                tw['h-16'], 
+                tw['rounded-full'], 
+                tw['items-center'], 
+                tw['justify-center'], 
+                tw['mr-4'],
+                { backgroundColor: theme.colors.primary },
+                isEditing && { borderWidth: 2, borderColor: theme.colors.primaryLight }
+              ]}
+              disabled={profileImageUploading}
+            >
+              {profileImageUploading ? (
+                <ActivityIndicator size="small" color={theme.colors.surface} />
+              ) : student.profilePicture?.url ? (
+                <Image
+                  source={{ uri: student.profilePicture.url }}
+                  style={[tw['w-16'], tw['h-16'], tw['rounded-full']]}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={[tw['text-xl'], tw['font-bold'], { color: theme.colors.surface }]}>
+                  {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </Text>
+              )}
+              {isEditing && !profileImageUploading && (
+                <View style={[
+                  tw['rounded-full'], 
+                  tw['items-center'], 
+                  tw['justify-center'],
+                  { 
+                    backgroundColor: theme.colors.primary,
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: 20,
+                    height: 20,
+                  }
+                ]}>
+                  <Text style={[tw['text-xs'], { color: theme.colors.surface }]}>✎</Text>
+                </View>
+              )}
+            </TouchableOpacity>
             <View style={[tw['flex-1'], ]}>
               {isEditing ? (
                 <>

@@ -29,14 +29,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'MCQTest'>;
 interface Standard {
   _id: string;
   name: string;
-  divisions?: Division[];
   mcqTestCount?: number;
-}
-
-interface Division {
-  _id: string;
-  name: string;
-  studentCount?: number;
 }
 
 interface MCQTest {
@@ -227,7 +220,7 @@ export default function MCQTest({ navigation }: Props) {
               { color: theme.colors.textSecondary },
             ]}
           >
-            {standard.divisions?.length || 0} divisions • {standard.mcqTestCount || 0} MCQ tests
+            {standard.mcqTestCount || 0} MCQ tests
           </Text>
           <View style={[tw['flex-row'], tw['items-center']]}>
             <View
@@ -290,7 +283,10 @@ export default function MCQTest({ navigation }: Props) {
       >
         <View style={[tw['flex-row'], tw['items-center'], tw['justify-between']]}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Home' as never)}
+            onPress={() => navigation.reset({
+              index: 0,
+              routes: [{ name: 'Dashboard' as never }],
+            })}
             style={[
               tw['w-10'],
               tw['h-10'],

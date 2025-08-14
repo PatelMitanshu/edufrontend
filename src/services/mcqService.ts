@@ -47,8 +47,7 @@ class MCQService {
 
   private async getAuthHeaders() {
     const token = await this.getAuthToken();
-    console.log('Auth token for headers:', token ? `${token.substring(0, 20)}...` : 'No token');
-    return {
+        return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
@@ -56,8 +55,7 @@ class MCQService {
 
   private async getMultipartHeaders() {
     const token = await this.getAuthToken();
-    console.log('Auth token for multipart:', token ? `${token.substring(0, 20)}...` : 'No token');
-    return {
+        return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'multipart/form-data',
     };
@@ -67,26 +65,19 @@ class MCQService {
   async testAuth(): Promise<{ success: boolean; message: string }> {
     try {
       const token = await this.getAuthToken();
-      console.log('Testing auth with token:', token ? 'Token exists' : 'No token');
-      
-      if (!token) {
+            if (!token) {
         return { success: false, message: 'No authentication token found' };
       }
 
       const headers = await this.getAuthHeaders();
-      console.log('Testing auth with URL:', `${API_BASE_URL}/standards`);
-
-      // Test with existing standards endpoint that requires auth
+            // Test with existing standards endpoint that requires auth
       const response = await fetch(`${API_BASE_URL}/standards`, {
         method: 'GET',
         headers,
       });
 
-      console.log('Auth test response status:', response.status);
-      const result = await response.json();
-      console.log('Auth test response:', result);
-
-      if (response.ok) {
+            const result = await response.json();
+            if (response.ok) {
         return { success: true, message: 'Authentication successful' };
       } else {
         return { success: false, message: result.message || 'Authentication failed' };
@@ -135,9 +126,7 @@ class MCQService {
   async generateMCQ(data: GenerateMCQRequest): Promise<{ questions: MCQQuestion[] }> {
     try {
       const token = await this.getAuthToken();
-      console.log('Auth token retrieved:', token ? 'Token exists' : 'No token found');
-      
-      if (!token) {
+            if (!token) {
         throw new Error('No authentication token found. Please login again.');
       }
 
@@ -155,20 +144,14 @@ class MCQService {
       const headers = await this.getMultipartHeaders();
       const { 'Content-Type': removed, ...headersWithoutContentType } = headers; // Let fetch set the boundary for multipart
 
-      console.log('Making request to:', `${API_BASE_URL}/mcq/generate`);
-      console.log('Request headers:', headersWithoutContentType);
-
-      const response = await fetch(`${API_BASE_URL}/mcq/generate`, {
+                  const response = await fetch(`${API_BASE_URL}/mcq/generate`, {
         method: 'POST',
         headers: headersWithoutContentType,
         body: formData,
       });
 
-      console.log('Response status:', response.status);
-      const result = await response.json();
-      console.log('Response data:', result);
-
-      if (!response.ok) {
+            const result = await response.json();
+            if (!response.ok) {
         // Handle specific error cases
         if (response.status === 503 && result.retryable) {
           const error = new Error(result.message || 'AI service is temporarily overloaded');

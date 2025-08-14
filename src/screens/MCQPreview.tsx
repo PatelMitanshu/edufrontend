@@ -81,11 +81,22 @@ export default function MCQPreview({ route, navigation }: Props) {
           {
             text: 'OK',
             onPress: () => {
-              // Navigate back to Dashboard (which contains Home) and reset the stack
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Dashboard' as never }],
-              });
+              if (testId) {
+                // For updated tests, navigate back to MCQTest page to show the updated test list
+                navigation.reset({
+                  index: 1,
+                  routes: [
+                    { name: 'Dashboard' as never },
+                    { name: 'MCQTest' as never }
+                  ],
+                });
+              } else {
+                // For new tests, navigate back to Dashboard (Home)
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Dashboard' as never }],
+                });
+              }
             },
           },
         ]

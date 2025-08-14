@@ -84,6 +84,15 @@ export const studentService = {
     return response.data;
   },
 
+  async uploadProfilePicture(id: string, imageData: FormData): Promise<{ student: Student }> {
+    const response = await api.post(`/students/${id}/profile-picture`, imageData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   async deleteStudent(id: string): Promise<{ message: string }> {
     const response = await api.delete(`/students/${id}`);
     return response.data;

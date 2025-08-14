@@ -235,7 +235,7 @@ function ProfileScreen() {
         AsyncStorage.setItem('profileUpdated', Date.now().toString());
       }, 100);
     } catch (error) {
-      console.log('Failed to broadcast profile change:', error);
+      // Error broadcasting, continue anyway
     }
   };
 
@@ -261,7 +261,7 @@ function ProfileScreen() {
           await AsyncStorage.setItem('teacherData', JSON.stringify(teacher));
         }
       } catch (storageError) {
-        console.log('Failed to update AsyncStorage:', storageError);
+        // Silent error - continue
       }
       
       // Broadcast the change to other screens
@@ -297,8 +297,7 @@ function ProfileScreen() {
           await AsyncStorage.setItem('teacherData', JSON.stringify(teacher));
         }
       } catch (storageError) {
-        console.log('Failed to update AsyncStorage:', storageError);
-      }
+              }
       
       // Broadcast the change to other screens
       broadcastProfileChange();

@@ -80,7 +80,6 @@ function Home({ navigation }: Props) {
       }
     } catch (error) {
       // Silently fail - use cached data
-      console.log('Failed to refresh profile from server:', error);
     }
   };
 

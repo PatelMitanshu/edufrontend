@@ -104,9 +104,7 @@ export default function CreateMCQ({ route, navigation }: Props) {
       setIsGenerating(true);
 
       // Test authentication first
-      console.log('Testing authentication...');
       const authTest = await mcqService.testAuth();
-      console.log('Auth test result:', authTest);
 
       if (!authTest.success) {
         Alert.alert('Authentication Error', authTest.message + '. Please login again.');
@@ -114,9 +112,7 @@ export default function CreateMCQ({ route, navigation }: Props) {
       }
 
       // Check service status
-      console.log('Checking AI service status...');
       const statusCheck = await mcqService.checkServiceStatus();
-      console.log('Service status:', statusCheck);
       
       if (!statusCheck.success && statusCheck.status === 'overloaded') {
         Alert.alert(
@@ -134,7 +130,6 @@ export default function CreateMCQ({ route, navigation }: Props) {
         return;
       }
 
-      console.log('Authentication successful, generating MCQ...');
       const result = await mcqService.generateMCQ({
         image: selectedImage,
         questionCount,
