@@ -17,215 +17,253 @@ import { Student, studentService } from '../services/studentService';
 import { RootStackParamList } from '../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface PositionButtonProps {
+interface DraggableStudentCardProps {
   student: Student;
   index: number;
   students: Student[];
   theme: any;
-  moveStudentUp: (student: Student) => void;
-  moveStudentDown: (student: Student) => void;
+  tw: any;
   moveStudentToPosition: (student: Student, position: number) => void;
+  handleStudentPress: (student: Student) => void;
 }
 
-const PositionButton: React.FC<PositionButtonProps> = ({
+const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
   student,
   index,
   students,
   theme,
-  moveStudentUp,
-  moveStudentDown,
+  tw,
   moveStudentToPosition,
+  handleStudentPress,
 }) => {
-  const animatedValue = React.useRef(new Animated.Value(0)).current;
   const dragY = React.useRef(new Animated.Value(0)).current;
-  const isDragging = React.useRef(false);
-  const dragStartY = React.useRef(0);
-  
-  const panResponder = React.useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (evt, gestureState) => {
-      return Math.abs(gestureState.dy) > 5 || isDragging.current;
-    },
-    onPanResponderGrant: (evt) => {
-      dragStartY.current = evt.nativeEvent.pageY;
-      // Start animation when gesture begins
-      Animated.spring(animatedValue, {
-        toValue: 1,
-        useNativeDriver: true,
-      }).start();
-    },
-    onPanResponderMove: (evt, gestureState) => {
-      const { dy } = gestureState;
-      
-      // Check if this is a long press (hold for 500ms)
-      if (!isDragging.current && Math.abs(dy) < 10) {
-        setTimeout(() => {
-          if (!isDragging.current && Math.abs(gestureState.dy) < 10) {
-            isDragging.current = true;
-            // Start drag mode
-            Animated.spring(animatedValue, {
-              toValue: 2, // Drag mode
-              useNativeDriver: true,
-            }).start();
+  const scaleValue = React.useRef(new Animated.Value(1)).current;
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [isLongPressActive, setIsLongPressActive] = React.useState(false);
+  const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
+
+  const panResponder = React.useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => isLongPressActive, // Only allow movement after long press
+        onPanResponderGrant: (evt) => {
+          console.log('Gesture started, waiting for long press');
+          
+          // Clear any existing timer
+          if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
           }
-        }, 500);
-      }
-
-      if (isDragging.current) {
-        // Update drag position
-        dragY.setValue(dy);
-        
-        // Calculate which position the student should move to
-        const itemHeight = 120; // Approximate height of each student card
-        const targetIndex = Math.max(0, Math.min(students.length - 1, 
-          index + Math.round(dy / itemHeight)));
-        
-        if (targetIndex !== index) {
-          // Visual feedback for target position
-          Animated.spring(animatedValue, {
-            toValue: 3,
-            useNativeDriver: true,
-          }).start();
-        }
-      } else {
-        // Regular swipe feedback
-        if (Math.abs(dy) > 30) {
-          Animated.spring(animatedValue, {
-            toValue: dy < 0 ? 2 : 3, // 2 for up, 3 for down
-            useNativeDriver: true,
-          }).start();
-        }
-      }
-    },
-    onPanResponderRelease: (evt, gestureState) => {
-      const { dy } = gestureState;
-      
-      // Reset animations
-      Animated.parallel([
-        Animated.spring(animatedValue, {
-          toValue: 0,
-          useNativeDriver: true,
-        }),
-        Animated.spring(dragY, {
-          toValue: 0,
-          useNativeDriver: true,
-        })
-      ]).start();
-      
-      if (isDragging.current) {
-        // Handle drag and drop
-        const itemHeight = 120;
-        const targetIndex = Math.max(0, Math.min(students.length - 1, 
-          index + Math.round(dy / itemHeight)));
-        
-        if (targetIndex !== index) {
-          moveStudentToPosition(student, targetIndex);
-        }
-        isDragging.current = false;
-      } else if (Math.abs(dy) > 30) {
-        // Handle regular swipe
-        if (dy < 0 && index > 0) {
-          moveStudentUp(student);
-        } else if (dy > 0 && index < students.length - 1) {
-          moveStudentDown(student);
-        }
-      }
-    },
-  }), [student, index, students, moveStudentUp, moveStudentDown, moveStudentToPosition]);
-
-  const scaleTransform = animatedValue.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [1, 1.1, 1.3, 1.2], // Bigger scale for drag mode
-  });
-
-  const backgroundColorTransform = animatedValue.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [
-      theme.colors.primary, 
-      theme.colors.primaryLight, 
-      '#10B981', // Green for up/drag
-      '#EF4444'  // Red for down
-    ],
-  });
-
-  const opacityTransform = animatedValue.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [1, 1, 0.8, 0.8], // Slightly transparent during drag
-  });
+          
+          // Start long press timer (1000ms = 1 second for longer selection time)
+          longPressTimer.current = setTimeout(() => {
+            console.log('Long press activated - drag mode enabled');
+            setIsLongPressActive(true);
+            setIsDragging(true);
+            
+            // Animate scale up when long press activates
+            Animated.parallel([
+              Animated.timing(scaleValue, {
+                toValue: 1.05,
+                duration: 150,
+                useNativeDriver: true,
+              }),
+            ]).start();
+          }, 1000); // 1 second long press required
+        },
+        onPanResponderMove: (_, gestureState) => {
+          // Only allow movement if long press is active
+          if (isLongPressActive) {
+            console.log('Moving with dy:', gestureState.dy);
+            // Make the container follow finger movement
+            dragY.setValue(gestureState.dy);
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          console.log('Gesture released with dy:', gestureState.dy);
+          
+          // Clear the long press timer
+          if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+          }
+          
+          // If long press was not activated, just reset (no profile opening)
+          if (!isLongPressActive) {
+            console.log('Short press - no action');
+            return;
+          }
+          
+          // Reset drag states
+          setIsDragging(false);
+          setIsLongPressActive(false);
+          
+          // If it was just a small movement during long press, don't change position
+          if (Math.abs(gestureState.dy) < 40) {
+            console.log('Drag distance too small, no position change');
+            // Just animate back without position change
+            Animated.parallel([
+              Animated.spring(dragY, {
+                toValue: 0,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+              Animated.timing(scaleValue, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+            ]).start();
+            return;
+          }
+          
+          // Calculate target position based on drag distance
+          const itemHeight = 120; // Standard item height
+          const dragDistance = gestureState.dy;
+          console.log('Release with drag distance:', dragDistance);
+          
+          // Less sensitive position calculation for single position moves
+          const positionChange = Math.round(dragDistance / (itemHeight * 0.8)); // Less sensitive
+          console.log('Position change calculated:', positionChange);
+          
+          let newIndex = index + positionChange;
+          newIndex = Math.max(0, Math.min(students.length - 1, newIndex));
+          
+          console.log('Moving from index', index, 'to index', newIndex);
+          
+          if (newIndex !== index) {
+            console.log('Calling moveStudentToPosition');
+            moveStudentToPosition(student, newIndex);
+          } else {
+            console.log('No position change needed');
+          }
+          
+          // Animate back to original position and scale
+          Animated.parallel([
+            Animated.spring(dragY, {
+              toValue: 0,
+              tension: 100,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleValue, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        },
+        onPanResponderTerminate: () => {
+          console.log('Gesture terminated');
+          
+          // Clear the long press timer
+          if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+          }
+          
+          // Reset all states
+          setIsDragging(false);
+          setIsLongPressActive(false);
+          
+          Animated.parallel([
+            Animated.spring(dragY, {
+              toValue: 0,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleValue, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        },
+      }),
+    [student, index, students, moveStudentToPosition, handleStudentPress, isLongPressActive]
+  );
 
   return (
-    <View 
+    <Animated.View
       {...panResponder.panHandlers}
-      style={[tw['mr-3'], { flexDirection: 'column', alignItems: 'center' }]}
+      style={[
+        tw['flex-row'], 
+        tw['items-center'], 
+        tw['p-4'], 
+        tw['mb-3'], 
+        tw['rounded-xl'],
+        {
+          backgroundColor: isDragging ? theme.colors.primaryLight : theme.colors.surface,
+          transform: [
+            { translateY: dragY },
+            { scaleX: scaleValue },
+            { scaleY: scaleValue },
+          ],
+          zIndex: isDragging ? 9999 : 1,
+          elevation: isDragging ? 15 : 2,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: isDragging ? 8 : 2,
+          },
+          shadowOpacity: isDragging ? 0.3 : 0.1,
+          shadowRadius: isDragging ? 12 : 4,
+        }
+      ]}
     >
-      <Animated.View
-        style={[
-          tw['w-10'], 
-          tw['h-16'], 
+      {/* Student Info */}
+      <View style={[tw['flex-row'], tw['items-center'], tw['flex-1']]}>
+        <View style={[
+          tw['w-12'], 
+          tw['h-12'], 
           tw['rounded-full'], 
           tw['items-center'], 
-          tw['justify-center'],
-          { 
-            backgroundColor: backgroundColorTransform,
-            borderWidth: 2,
-            borderColor: theme.colors.primaryLight,
-            transform: [
-              { scale: scaleTransform },
-              { translateY: isDragging.current ? dragY : 0 }
-            ],
-            opacity: opacityTransform,
-            zIndex: isDragging.current ? 1000 : 1,
-          }
-        ]}
-      >
+          tw['justify-center'], 
+          tw['mr-4'],
+          { backgroundColor: theme.colors.primary }
+        ]}>
+          <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
+            {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+          </Text>
+        </View>
+        <View style={[tw['flex-1']]}>
+          <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>
+            {student.name}
+          </Text>
+          {student.rollNumber && (
+            <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>
+              Roll No: {student.rollNumber}
+            </Text>
+          )}
+          {student.parentContact?.phone && (
+            <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>
+              📞 {student.parentContact.phone}
+            </Text>
+          )}
+        </View>
+        
+        {/* Profile Button */}
         <TouchableOpacity
-          style={[tw['flex-1'], tw['items-center'], tw['justify-center']]}
+          onPress={() => handleStudentPress(student)}
+          style={[
+            tw['w-10'], 
+            tw['h-10'], 
+            tw['rounded-full'], 
+            tw['items-center'], 
+            tw['justify-center'], 
+            tw['ml-3'],
+            { backgroundColor: theme.colors.primary + '20' } // Semi-transparent background
+          ]}
           activeOpacity={0.7}
         >
-          <Text style={[
-            tw['text-xs'], 
-            tw['font-bold'], 
-            tw['mb-1'],
-            { color: theme.colors.surface }
-          ]}>
-            ↑
-          </Text>
-          
-          <View style={[
-            tw['px-2'],
-            tw['py-1'],
-            { backgroundColor: theme.colors.surface, borderRadius: 4 }
-          ]}>
-            <Text style={[
-              tw['text-xs'], 
-              tw['font-bold'],
-              { color: theme.colors.primary }
-            ]}>
-              {index + 1}
-            </Text>
-          </View>
-          
-          <Text style={[
-            tw['text-xs'], 
-            tw['font-bold'], 
-            tw['mt-1'],
-            { color: theme.colors.surface }
-          ]}>
-            ↓
-          </Text>
+          <Text style={[tw['text-lg'], { color: theme.colors.primary }]}>👤</Text>
         </TouchableOpacity>
-      </Animated.View>
-      
-      <Text style={[
-        tw['text-xs'], 
-        tw['text-center'], 
-        tw['mt-1'],
-        tw['font-medium'],
-        { color: theme.colors.textSecondary }
-      ]}>
-        {isDragging.current ? 'Drag' : 'Hold'}
-      </Text>
-    </View>
+        
+        <View style={[tw['w-6'], tw['items-center']]}>
+          <Text style={[tw['text-lg'], { color: theme.colors.textSecondary }]}>☰</Text>
+        </View>
+      </View>
+    </Animated.View>
   );
 };
 
@@ -347,97 +385,36 @@ export default function DivisionDetail({ route, navigation }: Props) {
     return students;
   };
 
-  const moveStudentUp = async (student: Student) => {
-    const currentIndex = students.findIndex(s => s._id === student._id);
-    if (currentIndex > 0) {
-      const newStudents = [...students];
-      [newStudents[currentIndex], newStudents[currentIndex - 1]] = [newStudents[currentIndex - 1], newStudents[currentIndex]];
-      setStudents(newStudents);
-      await saveStudentPositions(newStudents);
-    }
-  };
-
-  const moveStudentDown = async (student: Student) => {
-    const currentIndex = students.findIndex(s => s._id === student._id);
-    if (currentIndex < students.length - 1) {
-      const newStudents = [...students];
-      [newStudents[currentIndex], newStudents[currentIndex + 1]] = [newStudents[currentIndex + 1], newStudents[currentIndex]];
-      setStudents(newStudents);
-      await saveStudentPositions(newStudents);
-    }
-  };
-
   const moveStudentToPosition = async (student: Student, newPosition: number) => {
+    console.log('moveStudentToPosition called:', student.name, 'to position', newPosition);
     const currentIndex = students.findIndex(s => s._id === student._id);
-    if (currentIndex === newPosition) return;
+    console.log('Current index:', currentIndex, 'New position:', newPosition);
+    
+    if (currentIndex === newPosition) {
+      console.log('No change needed, same position');
+      return;
+    }
 
     const newStudents = [...students];
     const [movedStudent] = newStudents.splice(currentIndex, 1);
     newStudents.splice(newPosition, 0, movedStudent);
     
+    console.log('Updated student order:', newStudents.map(s => s.name));
     setStudents(newStudents);
     await saveStudentPositions(newStudents);
-  };
-
-  const createPositionButton = (student: Student, index: number) => {
-    return (
-      <PositionButton
-        student={student}
-        index={index}
-        students={students}
-        theme={theme}
-        moveStudentUp={moveStudentUp}
-        moveStudentDown={moveStudentDown}
-        moveStudentToPosition={moveStudentToPosition}
-      />
-    );
+    console.log('Position change completed');
   };
 
   const renderStudentCard = ({ item, index }: { item: Student, index: number }) => (
-    <View style={[
-      tw['flex-row'], 
-      tw['items-center'], 
-      tw['p-4'], 
-      tw['mb-3'], 
-      tw['rounded-xl'],
-      { backgroundColor: theme.colors.surface }
-    ]}>
-      {/* Single Position Change Button with Gesture */}
-      {createPositionButton(item, index)}
-
-      {/* Student Info (Clickable) */}
-      <TouchableOpacity
-        style={[tw['flex-row'], tw['items-center'], tw['flex-1']]}
-        onPress={() => handleStudentPress(item)}
-        activeOpacity={0.7}
-      >
-        <View style={[
-          tw['w-12'], 
-          tw['h-12'], 
-          tw['rounded-full'], 
-          tw['items-center'], 
-          tw['justify-center'], 
-          tw['mr-4'],
-          { backgroundColor: theme.colors.primary }
-        ]}>
-          <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
-            {item.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-          </Text>
-        </View>
-        <View style={[tw['flex-1']]}>
-          <Text style={[tw['text-lg'], tw['font-semibold'], tw['mb-1'], { color: theme.colors.text }]}>{item.name}</Text>
-          {item.rollNumber && (
-            <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>Roll No: {item.rollNumber}</Text>
-          )}
-          {item.parentContact?.phone && (
-            <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>📞 {item.parentContact.phone}</Text>
-          )}
-        </View>
-        <View style={[tw['w-6'], tw['items-center']]}>
-          <Text style={[tw['text-lg'], { color: theme.colors.textSecondary }]}>→</Text>
-        </View>
-      </TouchableOpacity>
-    </View>
+    <DraggableStudentCard
+      student={item}
+      index={index}
+      students={students}
+      theme={theme}
+      tw={tw}
+      moveStudentToPosition={moveStudentToPosition}
+      handleStudentPress={handleStudentPress}
+    />
   );
 
   if (loading) {

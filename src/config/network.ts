@@ -6,19 +6,19 @@
 
 export const API_ENDPOINTS = {
   // For physical devices on the same network
-  PHYSICAL_DEVICE: 'http://192.168.1.3:3000/api',
+  PHYSICAL_DEVICE: 'http://192.168.1.3:3000',
   
   // For Android emulator
-  ANDROID_EMULATOR: 'http://10.0.2.2:3000/api',
+  ANDROID_EMULATOR: 'http://10.0.2.2:3000',
   
   // For iOS simulator
-  IOS_SIMULATOR: 'http://localhost:3000/api',
+  IOS_SIMULATOR: 'http://localhost:3000',
   
   // For testing on same computer
-  LOCALHOST: 'http://localhost:3000/api',
+  LOCALHOST: 'http://localhost:3000',
   
   // Production server (when available)
-  PRODUCTION: 'https://edulearnappbackend.onrender.com/api'
+  PRODUCTION: 'https://edulearnappbackend.onrender.com'
 };
 
 // Current active endpoint

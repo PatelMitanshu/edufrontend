@@ -8,7 +8,7 @@ import { CURRENT_API_ENDPOINT } from '../config/network';
 
 // Development API URL - automatically set based on your network config
 const getAPIBaseURL = () => {
-  return CURRENT_API_ENDPOINT;
+  return `${CURRENT_API_ENDPOINT}/api`;
 };
 
 const API_BASE_URL = getAPIBaseURL();

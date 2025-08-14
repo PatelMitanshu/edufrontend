@@ -13,6 +13,10 @@ export type RootStackParamList = {
   Register: undefined;
   ForgotPassword: undefined;
   Profile: undefined;
+  MCQTest: undefined;
+  CreateMCQ: { standardId: string; standardName: string };
+  MCQPreview: { mcqData: any; standardId: string; standardName: string; testId?: string };
+  MCQTests: { studentId: string };
   StandardDetail: { standardId: string; standardName: string };
   AddDivision: { standardId: string; standardName: string };
   DivisionDetail: { 
@@ -45,6 +49,10 @@ import ForgotPassword from './screens/ForgotPassword';
 import Profile from './screens/Profile';
 import Settings from './screens/Settings';
 import About from './screens/About'
+import MCQTest from './screens/MCQTest';
+import CreateMCQ from './screens/CreateMCQ';
+import MCQPreview from './screens/MCQPreview';
+import MCQTestsScreen from './screens/MCQTestsScreen';
 import StandardDetail from './screens/StandardDetail';
 import AddDivision from './screens/AddDivision';
 import DivisionDetail from './screens/DivisionDetail';
@@ -145,6 +153,14 @@ function App() {
               options={{ headerShown: false }} 
             />
             <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false }} />
+            <Stack.Screen name="MCQTest" component={MCQTest} options={{ headerShown: false }} />
+            <Stack.Screen name="CreateMCQ" component={CreateMCQ} options={{ headerShown: false }} />
+            <Stack.Screen name="MCQPreview" component={MCQPreview} options={{ headerShown: false }} />
+            <Stack.Screen 
+              name="MCQTests" 
+              component={MCQTestsScreen} 
+              options={{ headerShown: false }} 
+            />
             <Stack.Screen 
               name="StandardDetail" 
               component={StandardDetail} 

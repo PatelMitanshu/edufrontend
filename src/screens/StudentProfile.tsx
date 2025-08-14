@@ -20,6 +20,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { studentService, Student } from '../services/studentService';
 import { uploadService, Upload } from '../services/uploadService';
+import { studentMCQService } from '../services/studentMCQService';
 import FileViewer from '../components/FileViewer';
 import { useTheme } from '../contexts/ThemeContext';
 import { tw } from '../utils/tailwind';
@@ -40,6 +41,15 @@ function StudentProfile({ route, navigation }: Props) {
   const [fileOptionsVisible, setFileOptionsVisible] = useState(false);
   const [pendingFile, setPendingFile] = useState<Upload | null>(null);
   
+  // MCQ Test statistics state
+  const [mcqStats, setMcqStats] = useState({
+    availableTests: 0,
+    completedTests: 0,
+    averageScore: 0,
+  });
+  const [mcqLoading, setMcqLoading] = useState(false);
+  const [mcqError, setMcqError] = useState(false);
+  
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -56,11 +66,52 @@ function StudentProfile({ route, navigation }: Props) {
       
       setStudent(studentResponse.student);
       setUploads(uploadsResponse.uploads);
+      
+      // Load MCQ statistics
+      await loadMCQStatistics();
     } catch (error) {
       Alert.alert('Error', 'Failed to load student data. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const loadMCQStatistics = async () => {
+    try {
+      setMcqLoading(true);
+      setMcqError(false);
+      
+      // Fetch available tests and test history in parallel
+      const [availableTestsResponse, testHistoryResponse] = await Promise.all([
+        studentMCQService.getAvailableTests(studentId),
+        studentMCQService.getTestHistory(studentId),
+      ]);
+
+      const availableTests = availableTestsResponse.tests.length;
+      const completedTests = testHistoryResponse.testHistory.length;
+      
+      // Calculate average score from test history
+      let averageScore = 0;
+      if (completedTests > 0) {
+        const totalScore = testHistoryResponse.testHistory.reduce(
+          (sum, test) => sum + test.percentage, 
+          0
+        );
+        averageScore = Math.round(totalScore / completedTests);
+      }
+
+      setMcqStats({
+        availableTests,
+        completedTests,
+        averageScore,
+      });
+    } catch (error) {
+      console.error('Error loading MCQ statistics:', error);
+      setMcqError(true);
+      // Don't show error alert for MCQ stats as it's not critical
+    } finally {
+      setMcqLoading(false);
     }
   };
 
@@ -557,6 +608,63 @@ function StudentProfile({ route, navigation }: Props) {
               )}
             </View>
           </View>
+        </View>
+
+        {/* MCQ Tests Section */}
+        <View style={[tw['m-4'], tw['p-6'], tw['rounded-xl'], { backgroundColor: theme.colors.surface }]}>
+          <View style={[tw['flex-row'], tw['items-center'], tw['justify-between'], tw['mb-4']]}>
+            <Text style={[tw['text-xl'], tw['font-bold'], { color: theme.colors.text }]}>MCQ Tests</Text>
+            <TouchableOpacity
+              style={[
+                tw['px-4'], 
+                tw['py-2'], 
+                tw['rounded-xl'], 
+                { backgroundColor: theme.colors.primary }
+              ]}
+              onPress={() => navigation.navigate('MCQTests', { studentId })}
+            >
+              <Text style={[tw['text-sm'], tw['font-semibold'], { color: theme.colors.surface }]}>
+                📝 Take Tests
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={[tw['flex-row'], tw['justify-between'], tw['mb-2']]}>
+            <View style={[tw['items-center']]}>
+              {mcqLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Text style={[tw['text-lg'], tw['font-bold'], { color: theme.colors.primary }]}>
+                  {mcqError ? '–' : mcqStats.availableTests}
+                </Text>
+              )}
+              <Text style={[tw['text-xs'], { color: theme.colors.textSecondary }]}>Available</Text>
+            </View>
+            <View style={[tw['items-center']]}>
+              {mcqLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.success} />
+              ) : (
+                <Text style={[tw['text-lg'], tw['font-bold'], { color: theme.colors.success }]}>
+                  {mcqError ? '–' : mcqStats.completedTests}
+                </Text>
+              )}
+              <Text style={[tw['text-xs'], { color: theme.colors.textSecondary }]}>Completed</Text>
+            </View>
+            <View style={[tw['items-center']]}>
+              {mcqLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.warning} />
+              ) : (
+                <Text style={[tw['text-lg'], tw['font-bold'], { color: theme.colors.warning }]}>
+                  {mcqError ? '–' : (mcqStats.completedTests > 0 ? `${mcqStats.averageScore}%` : '–')}
+                </Text>
+              )}
+              <Text style={[tw['text-xs'], { color: theme.colors.textSecondary }]}>Avg Score</Text>
+            </View>
+          </View>
+          
+          <Text style={[tw['text-sm'], tw['text-center'], { color: theme.colors.textSecondary }]}>
+            Practice with AI-generated questions and track your progress
+          </Text>
         </View>
 
         {/* Student Work Section */}

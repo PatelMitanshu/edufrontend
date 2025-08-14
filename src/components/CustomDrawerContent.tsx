@@ -174,6 +174,23 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
             </View>
           </TouchableOpacity>
 
+          {/* MCQ Test Menu Item */}
+          <TouchableOpacity
+            style={[tw['flex-row'], tw['items-center'], tw['mx-4'], tw['px-4'], tw['py-4'], tw['bg-surface'], tw['rounded-xl'], tw['shadow-lg'], tw['mb-3']]}
+            onPress={() => navigateToScreen('MCQTest')}
+          >
+            <View style={[tw['w-10'], tw['h-10'], tw['justify-center'], tw['items-center'], tw['mr-4'], tw['bg-gradient-primary'], tw['rounded-xl'], tw['shadow-sm']]}> 
+              <Text style={[tw['text-lg'], tw['text-white']]}>📝</Text>
+            </View>
+            <View style={[tw['flex-1']]}>
+              <Text style={[tw['text-base'], tw['text-primary'], tw['font-bold']]}>MCQ Test</Text>
+              <Text style={[tw['text-sm'], tw['text-secondary']]}>Create AI-powered MCQ tests</Text>
+            </View>
+            <View style={[tw['w-6'], tw['h-6'], tw['justify-center'], tw['items-center']]}>
+              <Text style={[tw['text-secondary'], tw['text-sm']]}>›</Text>
+            </View>
+          </TouchableOpacity>
+
           {/* About Menu Item */}
           <TouchableOpacity
             style={[tw['flex-row'], tw['items-center'], tw['mx-4'], tw['px-4'], tw['py-4'], tw['bg-surface'], tw['rounded-xl'], tw['shadow-lg'], tw['mb-3']]}
