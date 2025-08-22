@@ -8,6 +8,9 @@ import {
   PanResponder,
   Animated,
   Image,
+  LayoutAnimation,
+  UIManager,
+  Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -26,6 +29,10 @@ interface DraggableStudentCardProps {
   tw: any;
   moveStudentToPosition: (student: Student, position: number) => void;
   handleStudentPress: (student: Student) => void;
+  onDragUpdate: (student: Student, newPosition: number) => void;
+  onDragEnd: () => void;
+  draggedStudentId: string | null;
+  setGlobalIsDragging: (dragging: boolean) => void;
 }
 
 const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
@@ -36,29 +43,61 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
   tw,
   moveStudentToPosition,
   handleStudentPress,
+  onDragUpdate,
+  onDragEnd,
+  draggedStudentId,
+  setGlobalIsDragging,
 }) => {
   const dragY = React.useRef(new Animated.Value(0)).current;
   const scaleValue = React.useRef(new Animated.Value(1)).current;
+  const positionY = React.useRef(new Animated.Value(0)).current;
+  const currentDragDistance = React.useRef(0);
   const [isDragging, setIsDragging] = React.useState(false);
   const [isLongPressActive, setIsLongPressActive] = React.useState(false);
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
 
+  // Animate position changes for non-dragged items
+  React.useEffect(() => {
+    if (draggedStudentId && draggedStudentId !== student._id) {
+      // Smooth animation for other containers when their position changes
+      Animated.spring(positionY, {
+        toValue: 0, // Always animate to 0, let FlatList handle the actual positioning
+        tension: 120,
+        friction: 10,
+        useNativeDriver: true,
+      }).start();
+    } else if (!draggedStudentId) {
+      // Reset position when no drag is active
+      Animated.spring(positionY, {
+        toValue: 0,
+        tension: 150,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [draggedStudentId, student._id, positionY, index]);
+
   const panResponder = React.useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => isLongPressActive, // Only allow movement after long press
-        onPanResponderGrant: (evt) => {
-          
-          // Clear any existing timer
+        onStartShouldSetPanResponder: () => {return true; // Always capture the initial touch
+        },
+        onMoveShouldSetPanResponder: (evt, gestureState) => {// Only capture movement if long press is active OR if there's significant movement
+          if (isLongPressActive || Math.abs(gestureState.dy) > 10) {return true;
+          }
+          return false;
+        },
+        onPanResponderTerminationRequest: () => {return !isLongPressActive; // Don't allow termination during drag
+        },
+        onPanResponderGrant: (evt) => {// Clear any existing timer
           if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
           }
           
-          // Start long press timer (1000ms = 1 second for longer selection time)
-          longPressTimer.current = setTimeout(() => {
-            setIsLongPressActive(true);
+          // Start long press timer
+          longPressTimer.current = setTimeout(() => {setIsLongPressActive(true);
             setIsDragging(true);
+            setGlobalIsDragging(true);
             
             // Animate scale up when long press activates
             Animated.parallel([
@@ -68,35 +107,65 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
                 useNativeDriver: true,
               }),
             ]).start();
-          }, 1000); // 1 second long press required
+          }, 800);
         },
-        onPanResponderMove: (_, gestureState) => {
-          // Only allow movement if long press is active
+        onPanResponderMove: (_, gestureState) => {// Only allow movement if long press is active
           if (isLongPressActive) {
-            // Make the container follow finger movement
+            // Track the current drag distance
+            currentDragDistance.current = gestureState.dy;// Make the container follow finger movement
             dragY.setValue(gestureState.dy);
-          }
+            
+            // Calculate new position in real-time for live feedback
+            const itemHeight = 120;
+            const dragDistance = gestureState.dy;
+            const positionChange = Math.round(dragDistance / (itemHeight * 0.8));
+            let newIndex = index + positionChange;
+            newIndex = Math.max(0, Math.min(students.length - 1, newIndex));
+            
+            // Call real-time update to show visual feedback
+            if (newIndex !== index) {onDragUpdate(student, newIndex);
+            }
+          } else {}
         },
-        onPanResponderRelease: (_, gestureState) => {
-          
-          // Clear the long press timer
+        onPanResponderRelease: (_, gestureState) => {// Clear the long press timer
           if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
           }
           
-          // If long press was not activated, just reset (no profile opening)
-          if (!isLongPressActive) {
+          // If long press was not activated, handle as normal tap
+          if (!isLongPressActive) {// Check if it was a small movement (tap vs swipe)
+            if (Math.abs(gestureState.dy) < 10 && Math.abs(gestureState.dx) < 10) {
+              handleStudentPress(student);
+            }
             return;
-          }
+          }// Handle position saving for long press
+          const currentDragY = currentDragDistance.current;if (Math.abs(currentDragY) >= 30) {
+            // Calculate target position based on drag distance
+            const itemHeight = 120;
+            const positionChange = Math.round(currentDragY / (itemHeight * 0.6));
+            let newIndex = index + positionChange;
+            newIndex = Math.max(0, Math.min(students.length - 1, newIndex));if (newIndex !== index) {moveStudentToPosition(student, newIndex);
+            }
+          } else {}
           
           // Reset drag states
           setIsDragging(false);
           setIsLongPressActive(false);
+          setGlobalIsDragging(false); // Re-enable scrolling
+          
+          // Reset drag distance tracking
+          currentDragDistance.current = 0;
+          
+          // Call onDragEnd to clean up temporary state
+          if (draggedStudentId === student._id) {
+            // Use a timeout to ensure this runs after the current render cycle
+            setTimeout(() => onDragEnd(), 0);
+          }
           
           // If it was just a small movement during long press, don't change position
-          if (Math.abs(gestureState.dy) < 40) {
-                        // Just animate back without position change
+          if (Math.abs(gestureState.dy) < 30) { // Reduced threshold
+            // Just animate back without position change
             Animated.parallel([
               Animated.spring(dragY, {
                 toValue: 0,
@@ -115,16 +184,11 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           
           // Calculate target position based on drag distance
           const itemHeight = 120; // Standard item height
-          const dragDistance = gestureState.dy;
-          
-          // Less sensitive position calculation for single position moves
-          const positionChange = Math.round(dragDistance / (itemHeight * 0.8)); // Less sensitive
+          const dragDistance = gestureState.dy;// Less sensitive position calculation for single position moves
+          const positionChange = Math.round(dragDistance / (itemHeight * 0.6)); // More sensitive
           
           let newIndex = index + positionChange;
-          newIndex = Math.max(0, Math.min(students.length - 1, newIndex));
-          
-          if (newIndex !== index) {
-            moveStudentToPosition(student, newIndex);
+          newIndex = Math.max(0, Math.min(students.length - 1, newIndex));if (newIndex !== index) {moveStudentToPosition(student, newIndex);
           }
           
           // Animate back to original position and scale
@@ -152,6 +216,16 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           // Reset all states
           setIsDragging(false);
           setIsLongPressActive(false);
+          setGlobalIsDragging(false); // Re-enable scrolling
+          
+          // Reset drag distance tracking
+          currentDragDistance.current = 0;
+          
+          // Call onDragEnd to clean up temporary state
+          if (draggedStudentId === student._id) {
+            // Use a timeout to ensure this runs after the current render cycle
+            setTimeout(() => onDragEnd(), 0);
+          }
           
           Animated.parallel([
             Animated.spring(dragY, {
@@ -166,22 +240,24 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
           ]).start();
         },
       }),
-    [student, index, students, moveStudentToPosition, handleStudentPress, isLongPressActive]
+    [student, index, students, moveStudentToPosition, handleStudentPress, isLongPressActive, draggedStudentId, onDragUpdate, onDragEnd, positionY]
   );
 
   return (
     <Animated.View
       {...panResponder.panHandlers}
       style={[
-        tw['flex-row'], 
-        tw['items-center'], 
-        tw['p-4'], 
-        tw['mb-3'], 
-        tw['rounded-xl'],
-        {
-          backgroundColor: isDragging ? theme.colors.primaryLight : theme.colors.surface,
+          tw['flex-row'], 
+          tw['items-center'], 
+          tw['p-4'], 
+          tw['mb-3'], 
+          tw['rounded-xl'],
+          {
+            backgroundColor: isDragging ? theme.colors.primaryLight : theme.colors.surface,
+          borderWidth: isDragging ? 2 : 1,
+          borderColor: isDragging ? theme.colors.primary : theme.colors.border,
           transform: [
-            { translateY: dragY },
+            { translateY: Animated.add(dragY, positionY) },
             { scaleX: scaleValue },
             { scaleY: scaleValue },
           ],
@@ -192,7 +268,7 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
             width: 0,
             height: isDragging ? 8 : 2,
           },
-          shadowOpacity: isDragging ? 0.3 : 0.1,
+          shadowOpacity: isDragging ? 0.25 : 0.08,
           shadowRadius: isDragging ? 12 : 4,
         }
       ]}
@@ -268,6 +344,12 @@ export default function DivisionDetail({ route, navigation }: Props) {
   const { theme } = useTheme();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+  const [draggedStudentId, setDraggedStudentId] = useState<string | null>(null);
+  const [tempStudents, setTempStudents] = useState<Student[]>([]);
+  const [globalIsDragging, setGlobalIsDragging] = useState(false);
+
+  // LayoutAnimation is automatically enabled in New Architecture
+  // No need for experimental setup
 
   useEffect(() => {
     navigation.setOptions({
@@ -324,8 +406,8 @@ export default function DivisionDetail({ route, navigation }: Props) {
       const response = await studentService.getStudentsByDivision(divisionId);
       const sortedStudents = await loadStudentPositions(response.students);
       setStudents(sortedStudents);
+      setTempStudents(sortedStudents);
     } catch (error) {
-      console.error('Error loading students:', error);
       Alert.alert('Error', 'Failed to load students');
     } finally {
       setLoading(false);
@@ -350,57 +432,101 @@ export default function DivisionDetail({ route, navigation }: Props) {
 
   // Position management functions
   const saveStudentPositions = async (newStudents: Student[]) => {
-    try {
-      const positions = newStudents.map((student, index) => ({
+    try {const positions = newStudents.map((student, index) => ({
         studentId: student._id,
         position: index
-      }));
-      await AsyncStorage.setItem(`student_positions_${divisionId}`, JSON.stringify(positions));
-    } catch (error) {
-          }
+      }));await AsyncStorage.setItem(`student_positions_${divisionId}`, JSON.stringify(positions));} catch (error) {
+      console.error('Error saving positions:', error);
+    }
   };
 
   const loadStudentPositions = async (students: Student[]) => {
-    try {
-      const savedPositions = await AsyncStorage.getItem(`student_positions_${divisionId}`);
-      if (savedPositions) {
-        const positions = JSON.parse(savedPositions);
-        const sortedStudents = [...students].sort((a, b) => {
+    try {const savedPositions = await AsyncStorage.getItem(`student_positions_${divisionId}`);if (savedPositions) {
+        const positions = JSON.parse(savedPositions);const sortedStudents = [...students].sort((a, b) => {
           const posA = positions.find((p: any) => p.studentId === a._id)?.position ?? students.indexOf(a);
-          const posB = positions.find((p: any) => p.studentId === b._id)?.position ?? students.indexOf(b);
-          return posA - posB;
-        });
-        return sortedStudents;
+          const posB = positions.find((p: any) => p.studentId === b._id)?.position ?? students.indexOf(b);return posA - posB;
+        });return sortedStudents;
       }
     } catch (error) {
-          }
-    return students;
+      console.error('Error loading positions:', error);
+    }return students;
   };
 
-  const moveStudentToPosition = async (student: Student, newPosition: number) => {
+  const moveStudentToPosition = async (student: Student, newPosition: number) => {const currentIndex = students.findIndex(s => s._id === student._id);
+    
+    if (currentIndex === newPosition) {return;
+    }
+
+    const newStudents = [...students];
+    const [movedStudent] = newStudents.splice(currentIndex, 1);
+    newStudents.splice(newPosition, 0, movedStudent);// Save position first
+    await saveStudentPositions(newStudents);
+    
+    // Then update state to trigger re-render
+    setStudents(newStudents);
+    setTempStudents(newStudents);};
+
+  const onDragUpdate = (student: Student, newPosition: number) => {
+    if (draggedStudentId !== student._id) {
+      setDraggedStudentId(student._id);
+      setGlobalIsDragging(true);
+    }
+
     const currentIndex = students.findIndex(s => s._id === student._id);
     
     if (currentIndex === newPosition) {
       return;
     }
 
+    // Configure smooth layout animation
+    LayoutAnimation.configureNext({
+      duration: 250,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+        duration: 150,
+      },
+      update: {
+        type: LayoutAnimation.Types.spring,
+        springDamping: 0.9,
+        initialVelocity: 0.2,
+        duration: 250,
+      },
+      delete: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+        duration: 150,
+      },
+    });
+
+    // Create temporary reordered list for live preview
     const newStudents = [...students];
     const [movedStudent] = newStudents.splice(currentIndex, 1);
     newStudents.splice(newPosition, 0, movedStudent);
     
-    setStudents(newStudents);
-    await saveStudentPositions(newStudents);
+    setTempStudents(newStudents);
+  };
+
+  const onDragEnd = () => {
+    setDraggedStudentId(null);
+    setGlobalIsDragging(false);
+    // Ensure temp students match actual students when drag ends
+    setTempStudents([...students]);
   };
 
   const renderStudentCard = ({ item, index }: { item: Student, index: number }) => (
     <DraggableStudentCard
       student={item}
       index={index}
-      students={students}
+      students={draggedStudentId ? tempStudents : students}
       theme={theme}
       tw={tw}
       moveStudentToPosition={moveStudentToPosition}
       handleStudentPress={handleStudentPress}
+      onDragUpdate={onDragUpdate}
+      onDragEnd={onDragEnd}
+      draggedStudentId={draggedStudentId}
+      setGlobalIsDragging={setGlobalIsDragging}
     />
   );
 
@@ -445,11 +571,17 @@ export default function DivisionDetail({ route, navigation }: Props) {
         </View>
       ) : (
         <FlatList
-          data={students}
+          key={`flatlist-${students.length}-${students.map(s => s._id).join(',')}`}
+          data={draggedStudentId ? tempStudents : students}
           renderItem={({ item, index }) => renderStudentCard({ item, index })}
           keyExtractor={(item) => item._id}
           contentContainerStyle={[tw['p-4']]}
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews={false}
+          scrollEnabled={!globalIsDragging}
+          extraData={[draggedStudentId, students.length, students, globalIsDragging]}
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
         />
       )}
     </View>

@@ -3,7 +3,7 @@ module.exports = {
   plugins: [
     'react-native-reanimated/plugin',
     // Remove console.log statements in production
-    ['transform-remove-console', { exclude: ['error', 'warn'] }],
+    // ['transform-remove-console', { exclude: ['error', 'warn'] }],
   ],
   env: {
     production: {

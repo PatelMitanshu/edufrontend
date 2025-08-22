@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { launchImageLibrary, launchCamera, ImagePickerResponse, MediaType } from 'react-native-image-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../App';
 import { studentService, Student } from '../services/studentService';
 import { uploadService, Upload } from '../services/uploadService';
@@ -58,6 +59,14 @@ function StudentProfile({ route, navigation }: Props) {
   useEffect(() => {
     loadStudentData();
   }, []);
+
+  // Ensure data is refreshed when screen comes into focus (e.g., after returning from AddUpload)
+  useFocusEffect(
+    useCallback(() => {
+      // reload uploads and student data when focused
+      loadStudentData();
+    }, [studentId])
+  );
 
   const loadStudentData = async () => {
     try {

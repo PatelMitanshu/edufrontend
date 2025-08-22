@@ -39,6 +39,8 @@ const FileViewer: React.FC<FileViewerProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isOpeningVideo, setIsOpeningVideo] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
 
   // Debug logging
         // Reset error state when props change
@@ -128,43 +130,48 @@ const FileViewer: React.FC<FileViewerProps> = ({
     }
 
     if (isVideo) {
+      const tryOpenVideo = async (attempt = 0) => {
+        setIsOpeningVideo(true);
+        setOpenError(null);
+        try {
+          if (Platform.OS === 'android') {
+            const videoIntent = `intent:${fileUrl}#Intent;type=video/*;scheme=https;end`;
+            const canOpenIntent = await Linking.canOpenURL(videoIntent);
+            if (canOpenIntent) {
+              await Linking.openURL(videoIntent);
+              setIsOpeningVideo(false);
+              return;
+            }
+          }
+          // Fallback: open direct URL
+          const canOpenDirect = await Linking.canOpenURL(fileUrl);
+          if (!canOpenDirect) throw new Error('No app available to open this video URL');
+          await Linking.openURL(fileUrl);
+          setIsOpeningVideo(false);
+        } catch (err: any) {
+          // If the video is still processing on the server, retry a couple of times
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+            return tryOpenVideo(attempt + 1);
+          }
+          setIsOpeningVideo(false);
+          setOpenError('Video might still be processing. Please try again in a moment.');
+        }
+      };
       return (
         <View style={styles.videoContainer}>
           <View style={styles.videoPlaceholder}>
             <Text style={styles.videoIcon}>🎥</Text>
             <Text style={styles.videoText}>Video File</Text>
-            <Text style={styles.videoSubtext}>Tap to open in external player</Text>
+            <Text style={styles.videoSubtext}>
+              {openError ? openError : 'Tap to open in external player'}
+            </Text>
             <TouchableOpacity
               style={styles.openButton}
-              onPress={() => {
-                // For Android, try to open with Intent
-                if (Platform.OS === 'android') {
-                  const videoIntent = `intent:${fileUrl}#Intent;type=video/*;package=com.google.android.youtube;scheme=https;end`;
-                  
-                  Linking.canOpenURL(videoIntent)
-                    .then((supported) => {
-                      if (supported) {
-                        return Linking.openURL(videoIntent);
-                      } else {
-                        // Fallback to direct URL
-                        return Linking.openURL(fileUrl);
-                      }
-                    })
-                    .catch((error) => {
-                      // Try direct URL as final fallback
-                      Linking.openURL(fileUrl).catch(() => {
-                        Alert.alert('Error', 'Could not open video. Please ensure you have a video player app installed.');
-                      });
-                    });
-                } else {
-                  // iOS - direct URL should work
-                  Linking.openURL(fileUrl).catch((error) => {
-                    Alert.alert('Error', 'Could not open video');
-                  });
-                }
-              }}
+              onPress={() => tryOpenVideo(0)}
+              disabled={isOpeningVideo}
             >
-              <Text style={styles.openButtonText}>Open Video</Text>
+              <Text style={styles.openButtonText}>{isOpeningVideo ? 'Opening…' : 'Open Video'}</Text>
             </TouchableOpacity>
           </View>
         </View>

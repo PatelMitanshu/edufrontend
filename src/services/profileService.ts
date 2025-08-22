@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from './api';
+import supabaseUploadService from './supabaseUploadService';
 
 interface TeacherProfile {
   id: string;
@@ -79,23 +80,41 @@ class ProfileService {
   // Upload profile picture
   async uploadProfilePicture(imageUri: string): Promise<string> {
     try {
-      const formData = new FormData();
-      formData.append('profilePicture', {
+      // Get teacher data to get the user ID
+      const teacherData = await AsyncStorage.getItem('teacherData');
+      if (!teacherData) {
+        throw new Error('Teacher data not found');
+      }
+      
+      const teacher = JSON.parse(teacherData);
+      
+      // Create file object for Supabase upload
+      const imageFile = {
         uri: imageUri,
         type: 'image/jpeg',
         name: 'profile.jpg',
-      } as any);
+      };
 
-      const response = await api.post('/profile/upload-profile-picture', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      // Upload to Supabase Storage
+      const uploadResult = await supabaseUploadService.uploadProfilePicture(
+        imageFile, 
+        teacher.id, 
+        'teacher'
+      );
+
+      if (uploadResult.error) {
+        throw new Error(uploadResult.error);
+      }
+
+      // Update the backend with the new profile picture URL
+      const response = await api.put('/profile/profile', {
+        profilePicture: uploadResult.url
       });
 
       // Update local storage with new teacher data
       await AsyncStorage.setItem('teacherData', JSON.stringify(response.data.data.teacher));
       
-      return response.data.data.profilePicture;
+      return uploadResult.url;
     } catch (error) {
       throw error;
     }

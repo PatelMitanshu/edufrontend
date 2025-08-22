@@ -82,7 +82,13 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
 
   return (
     <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}>
-      <DrawerContentScrollView {...props} style={tw['flex-1']} contentContainerStyle={[tw['flex-1']]}>
+      <DrawerContentScrollView 
+        {...props} 
+        style={tw['flex-1']} 
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
         {/* Enhanced Profile Section with Gradient Background */}
         <View style={[tw['relative'], tw['p-6'], tw['bg-gradient-primary'], tw['shadow-lg'], { paddingTop: 48, paddingBottom: 32 }]}>
           {/* Background Pattern */}
@@ -210,10 +216,10 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
         </View>
 
         {/* Spacer to push logout to bottom */}
-        <View style={tw['flex-1']} />
+        <View style={{ minHeight: 20 }} />
 
         {/* Enhanced Logout Section */}
-        <View style={[tw['px-4'], { paddingTop: 16 }, { backgroundColor: theme.colors.background }]}>
+        <View style={[tw['px-4'], { paddingTop: 16, paddingBottom: 8 }, { backgroundColor: theme.colors.background }]}>
           <TouchableOpacity
             style={[tw['flex-row'], tw['items-center'], tw['bg-error'], tw['px-5'], tw['py-4'], tw['rounded-xl'], tw['shadow-lg'], tw['mb-3']]}
             onPress={handleLogout}
@@ -232,7 +238,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
         </View>
 
         {/* Enhanced Footer */}
-        <View style={[tw['px-5'], tw['py-4'], tw['items-center'], tw['border-t'], tw['border-surface'], { backgroundColor: theme.colors.background }]}>
+        <View style={[tw['px-5'], tw['py-4'], tw['items-center'], tw['border-t'], tw['border-surface'], { backgroundColor: theme.colors.background, paddingBottom: 20 }]}>
           <View style={[tw['flex-row'], tw['items-center'], tw['mb-2']]}>
             <View style={[tw['w-8'], tw['h-8'], tw['bg-gradient-primary'], tw['rounded-lg'], tw['justify-center'], tw['items-center'], tw['mr-2']]}> 
               <Text style={[tw['text-sm'], tw['text-white']]}>📚</Text>

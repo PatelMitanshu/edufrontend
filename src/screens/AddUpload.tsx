@@ -177,9 +177,31 @@ function AddUpload({ route, navigation }: Props) {
           onPress: () => navigation.goBack(),
         },
       ]);
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to add upload. Please try again.';
-      Alert.alert('Error', errorMessage);
+    } catch (error: any) {let errorMessage = 'Failed to add upload. Please try again.';
+      let isNetworkError = false;
+      
+      // Handle specific error types
+      if (error.message) {
+        if (error.message.includes('timeout')) {
+          errorMessage = 'Upload timed out. The file may be too large or your connection is slow. Please try again with a smaller file or better connection.';
+        } else if (error.message.includes('Network Error') || error.message.includes('network')) {
+          isNetworkError = true;
+          errorMessage = 'Network error occurred during upload. The file might have been uploaded successfully. Please check the student profile to verify.';
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      Alert.alert(
+        isNetworkError ? 'Upload Status Unclear' : 'Upload Error', 
+        errorMessage,
+        isNetworkError ? [
+          { text: 'Check Profile', onPress: () => navigation.goBack() },
+          { text: 'OK', style: 'cancel' }
+        ] : [{ text: 'OK' }]
+      );
     } finally {
       setLoading(false);
     }
@@ -366,7 +388,14 @@ function AddUpload({ route, navigation }: Props) {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>
+                    {type === 'video' ? 'Uploading Video...' : 
+                     type === 'image' ? 'Uploading Image...' : 
+                     'Uploading File...'}
+                  </Text>
+                </View>
               ) : (
                 <Text style={styles.submitButtonText}>Add Upload</Text>
               )}
@@ -508,6 +537,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

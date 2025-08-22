@@ -13,6 +13,9 @@ const getAPIBaseURL = () => {
 
 const API_BASE_URL = getAPIBaseURL();
 
+// Export the API URL for direct use
+export const API_URL = API_BASE_URL;
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
