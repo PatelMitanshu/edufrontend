@@ -75,17 +75,13 @@ export default function MCQTest({ navigation }: Props) {
           try {
             const tests = await mcqService.getMCQTests(standard._id);
             return { ...standard, mcqTestCount: tests.length };
-          } catch (error) {
-            console.error(`Error loading tests for standard ${standard._id}:`, error);
-            return { ...standard, mcqTestCount: 0 };
+          } catch (error) {return { ...standard, mcqTestCount: 0 };
           }
         })
       );
       
       setStandards(standardsWithCounts);
-    } catch (error) {
-      console.error('Error loading standards:', error);
-      Alert.alert('Error', 'Failed to load standards');
+    } catch (error) {Alert.alert('Error', 'Failed to load standards');
     } finally {
       setLoading(false);
     }
@@ -96,9 +92,7 @@ export default function MCQTest({ navigation }: Props) {
       setTestsLoading(true);
       const tests = await mcqService.getMCQTests(standardId);
       setMcqTests(tests);
-    } catch (error) {
-      console.error('Error loading MCQ tests:', error);
-      Alert.alert('Error', 'Failed to load MCQ tests');
+    } catch (error) {Alert.alert('Error', 'Failed to load MCQ tests');
     } finally {
       setTestsLoading(false);
     }
@@ -142,9 +136,7 @@ export default function MCQTest({ navigation }: Props) {
                 // Also reload standards to update test count
                 loadStandards();
               }
-            } catch (error) {
-              console.error('Error deleting test:', error);
-              Alert.alert('Error', 'Failed to delete MCQ test');
+            } catch (error) {Alert.alert('Error', 'Failed to delete MCQ test');
             }
           },
         },
@@ -162,9 +154,7 @@ export default function MCQTest({ navigation }: Props) {
         standardName: selectedStandard?.name || 'Unknown Standard',
         testId: testId // Include testId to indicate this is an existing test
       });
-    } catch (error) {
-      console.error('Error loading test:', error);
-      Alert.alert('Error', 'Failed to load test details');
+    } catch (error) {Alert.alert('Error', 'Failed to load test details');
     }
   };
 

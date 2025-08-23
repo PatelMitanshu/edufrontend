@@ -39,9 +39,7 @@ class MCQService {
   private async getAuthToken(): Promise<string | null> {
     try {
       return await AsyncStorage.getItem('authToken');
-    } catch (error) {
-      console.error('Error getting auth token:', error);
-      return null;
+    } catch (error) {return null;
     }
   }
 
@@ -82,9 +80,7 @@ class MCQService {
       } else {
         return { success: false, message: result.message || 'Authentication failed' };
       }
-    } catch (error) {
-      console.error('Auth test error:', error);
-      return { success: false, message: error instanceof Error ? error.message : 'Auth test failed' };
+    } catch (error) {return { success: false, message: error instanceof Error ? error.message : 'Auth test failed' };
     }
   }
 
@@ -112,9 +108,7 @@ class MCQService {
           message: result.message || 'Service check failed' 
         };
       }
-    } catch (error) {
-      console.error('Service status check error:', error);
-      return { 
+    } catch (error) {return { 
         success: false, 
         status: 'error', 
         message: error instanceof Error ? error.message : 'Service check failed' 
@@ -164,9 +158,7 @@ class MCQService {
       }
 
       return { questions: result.questions };
-    } catch (error) {
-      console.error('Error generating MCQ:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -188,9 +180,7 @@ class MCQService {
       }
 
       return { success: result.success, mcqId: result.mcqId };
-    } catch (error) {
-      console.error('Error saving MCQ test:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -211,9 +201,7 @@ class MCQService {
       }
 
       return result.mcqTests;
-    } catch (error) {
-      console.error('Error fetching MCQ tests:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -234,9 +222,7 @@ class MCQService {
       }
 
       return result.mcqTest;
-    } catch (error) {
-      console.error('Error fetching MCQ test:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -257,9 +243,7 @@ class MCQService {
       }
 
       return { success: result.success };
-    } catch (error) {
-      console.error('Error deleting MCQ test:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -280,9 +264,7 @@ class MCQService {
       }
 
       return { success: result.success, mcqId: result.mcqId };
-    } catch (error) {
-      console.error('Error updating MCQ test:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 }

@@ -24,9 +24,7 @@ class SupabaseUploadService {
     if (!this.supabaseClient) {
       try {
         // Check if required modules are available
-        if (typeof createClient !== 'function') {
-          console.error('❌ createClient is not available');
-          return null;
+        if (typeof createClient !== 'function') {return null;
         }
         
         this.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -36,13 +34,7 @@ class SupabaseUploadService {
           },
           global: {
             fetch: (url: RequestInfo | URL, options: RequestInit = {}): Promise<Response> => {
-              console.log('🌐 Supabase fetch request:', {
-                url: url.toString(),
-                method: options.method || 'GET',
-                headers: options.headers,
-                hasBody: !!options.body
-              });
-              
+
               // Add timeout and better error handling for React Native
               const timeoutPromise = new Promise<never>((_, reject) =>
                 setTimeout(() => reject(new Error('Request timeout')), 30000)
@@ -60,9 +52,7 @@ class SupabaseUploadService {
                 .then((response: Response) => {
                   return response;
                 })
-                .catch(error => {
-                  console.error('❌ Supabase fetch error:', error);
-                  throw error;
+                .catch(error => {throw error;
                 });
             }
           }
@@ -70,12 +60,7 @@ class SupabaseUploadService {
         // Test bucket access immediately
         this.testBucketAccess();
         
-      } catch (error) {
-        console.error('❌ Failed to initialize Supabase client:', error);
-        if (error instanceof Error) {
-          console.error('Error message:', error.message);
-          console.error('Error stack:', error.stack);
-        }
+      } catch (error) {if (error instanceof Error) {}
         this.supabaseClient = null;
       }
     }
@@ -92,13 +77,9 @@ class SupabaseUploadService {
         .from(STORAGE_BUCKET)
         .list('', { limit: 1 });
       
-      if (error) {
-        console.error('❌ Bucket access failed (likely RLS policy issue):', error.message);
-      } else {
+      if (error) {} else {
       }
-    } catch (error) {
-      console.error('❌ Bucket test failed:', error);
-    }
+    } catch (error) {}
   }
 
   /**
@@ -125,12 +106,6 @@ class SupabaseUploadService {
       if (!supabase) {
         throw new Error('Supabase client not initialized');
       }
-      console.log('File info:', {
-        name: file.fileName || file.name,
-        type: file.type,
-        size: file.fileSize || file.size,
-        uri: file.uri?.substring(0, 50) + '...'
-      });
 
       // Generate unique filename if not provided
       const timestamp = Date.now();
@@ -151,13 +126,7 @@ class SupabaseUploadService {
           duplex: 'half' // Add this for React Native compatibility
         });
 
-      if (error) {
-        console.error('❌ Supabase upload error details:', {
-          message: error.message,
-          name: error.name,
-          details: JSON.stringify(error, null, 2)
-        });
-        throw error;
+      if (error) {throw error;
       }
       // Get public URL
       const { data: publicUrlData } = supabase.storage
@@ -167,9 +136,7 @@ class SupabaseUploadService {
         url: publicUrlData.publicUrl,
         path: filePath
       };
-    } catch (error) {
-      console.error('Supabase upload error:', error);
-      return {
+    } catch (error) {return {
         url: '',
         path: '',
         error: error instanceof Error ? error.message : 'Upload failed'
@@ -219,24 +186,18 @@ class SupabaseUploadService {
   async deleteFile(filePath: string): Promise<boolean> {
     try {
       const supabase = this.getSupabaseClient();
-      if (!supabase) {
-        console.error('Supabase client not initialized');
-        return false;
+      if (!supabase) {return false;
       }
 
       const { error } = await supabase.storage
         .from(STORAGE_BUCKET)
         .remove([filePath]);
 
-      if (error) {
-        console.error('Error deleting file:', error);
-        return false;
+      if (error) {return false;
       }
 
       return true;
-    } catch (error) {
-      console.error('Delete error:', error);
-      return false;
+    } catch (error) {return false;
     }
   }
 
@@ -265,9 +226,7 @@ class SupabaseUploadService {
   async getSignedUrl(filePath: string, expiresIn: number = 3600): Promise<string> {
     try {
       const supabase = this.getSupabaseClient();
-      if (!supabase) {
-        console.error('Supabase client not initialized');
-        return '';
+      if (!supabase) {return '';
       }
 
       const { data, error } = await supabase.storage
@@ -279,9 +238,7 @@ class SupabaseUploadService {
       }
 
       return data.signedUrl || '';
-    } catch (error) {
-      console.error('Error creating signed URL:', error);
-      return '';
+    } catch (error) {return '';
     }
   }
 }

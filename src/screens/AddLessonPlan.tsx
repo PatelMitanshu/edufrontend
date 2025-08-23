@@ -87,9 +87,7 @@ const AddLessonPlan: React.FC<AddLessonPlanProps> = ({
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
       return `${day}/${month}/${year}`;
-    } catch (error) {
-      console.error('formatDateDisplay error:', error);
-      return '01/01/2025';
+    } catch (error) {return '01/01/2025';
     }
   };
 
@@ -149,8 +147,7 @@ const AddLessonPlan: React.FC<AddLessonPlanProps> = ({
   useEffect(() => {
     if (!visible) return;
 
-    if (editingPlan) {
-      console.log('Setting form from editingPlan:', editingPlan);
+  if (editingPlan) {
       
       setSubject(safeString(editingPlan.subject));
       setTopic(safeString(editingPlan.topic));
@@ -280,9 +277,7 @@ const AddLessonPlan: React.FC<AddLessonPlanProps> = ({
             const result = await response.json();
             const uploadedUrl = result?.data?.url || '';
             tempIdToUrl[pending.tempId] = uploadedUrl;
-          } catch (uploadErr: any) {
-            console.error('Failed to upload pending file', pending, uploadErr);
-            Alert.alert('Upload failed', `Failed to upload ${pending.title}: ${uploadErr?.message || uploadErr}`);
+          } catch (uploadErr: any) {Alert.alert('Upload failed', `Failed to upload ${pending.title}: ${uploadErr?.message || uploadErr}`);
             setSavingLessonPlan(false);
             return;
           }
@@ -318,9 +313,7 @@ const AddLessonPlan: React.FC<AddLessonPlanProps> = ({
       resetForm();
       onClose();
 
-    } catch (error) {
-      console.error('Error saving lesson plan:', error);
-      Alert.alert('Error', `Failed to save lesson plan: ${error}`);
+    } catch (error) {Alert.alert('Error', `Failed to save lesson plan: ${error}`);
     } finally {
       setSavingLessonPlan(false);
     }
@@ -391,9 +384,7 @@ const AddLessonPlan: React.FC<AddLessonPlanProps> = ({
       // On cancellation some implementations throw an object with code
       if (err && (err.code === 'DOCUMENT_PICKER_CANCELED' || err.code === 'E_PICKER_CANCELLED')) {
         return;
-      }
-      console.error('pickFileForMaterial error:', err);
-      Alert.alert('File selection error', String(err?.message || err));
+      }Alert.alert('File selection error', String(err?.message || err));
     }
   };
 
@@ -512,15 +503,10 @@ const AddLessonPlan: React.FC<AddLessonPlanProps> = ({
     );
   };
 
-  console.log('Rendering AddLessonPlan, materials count:', materials?.length || 0);
-  
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <ErrorBoundary
-        onError={(error, errorInfo) => {
-          console.error('Top-level render error in AddLessonPlan:', error);
-          console.error('Error info:', errorInfo);
-        }}
+        onError={(error, errorInfo) => {}}
         fallback={
           <SafeAreaView style={[tw['flex-1'], { backgroundColor: theme.colors.background }]}> 
             <View style={[tw['p-4'], { backgroundColor: '#fef2f2', borderRadius: 8 }]}>
@@ -815,9 +801,7 @@ const AddLessonPlan: React.FC<AddLessonPlanProps> = ({
                 </View>
 
                 <ErrorBoundary
-                  onError={(error, errorInfo) => {
-                    console.error('Materials rendering error:', error);
-                  }}
+                  onError={(error, errorInfo) => {}}
                   fallback={
                     <View style={[tw['p-4'], { backgroundColor: '#fef2f2', borderRadius: 8 }]}>
                       <SafeText 

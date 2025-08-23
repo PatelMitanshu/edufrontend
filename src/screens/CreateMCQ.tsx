@@ -143,10 +143,7 @@ export default function CreateMCQ({ route, navigation }: Props) {
         standardId,
         standardName,
       });
-    } catch (error) {
-      console.error('Error generating MCQ:', error);
-      
-      // Check if it's a retryable service unavailable error
+    } catch (error) {// Check if it's a retryable service unavailable error
       if (error instanceof Error && (error as any).retryable) {
         const retryDelayMinutes = Math.ceil(((error as any).suggestedRetryDelay || 60000) / 60000);
         Alert.alert(

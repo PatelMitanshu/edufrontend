@@ -87,9 +87,7 @@ class LessonPlanService {
       }));
 
       return lessonPlans;
-    } catch (error) {
-      console.error('Error fetching lesson plans:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -115,9 +113,7 @@ class LessonPlanService {
       }));
 
       return lessonPlans;
-    } catch (error) {
-      console.error('Error fetching today\'s lesson plans:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -140,9 +136,7 @@ class LessonPlanService {
         ...data.data,
         id: data.data._id,
       };
-    } catch (error) {
-      console.error('Error fetching lesson plan:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -166,9 +160,7 @@ class LessonPlanService {
         ...data.data,
         id: data.data._id,
       };
-    } catch (error) {
-      console.error('Error creating lesson plan:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -192,9 +184,7 @@ class LessonPlanService {
         ...data.data,
         id: data.data._id,
       };
-    } catch (error) {
-      console.error('Error updating lesson plan:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -218,9 +208,7 @@ class LessonPlanService {
         completed: data.data.completed,
         completedAt: data.data.completedAt,
       };
-    } catch (error) {
-      console.error('Error toggling lesson plan completion:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -238,9 +226,7 @@ class LessonPlanService {
       if (!response.ok) {
         throw new Error(data.message || 'Failed to delete lesson plan');
       }
-    } catch (error) {
-      console.error('Error deleting lesson plan:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -260,9 +246,7 @@ class LessonPlanService {
       }
 
       return data.data;
-    } catch (error) {
-      console.error('Error fetching lesson plan stats:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -289,9 +273,7 @@ class LessonPlanService {
         ...data.data,
         id: data.data._id,
       };
-    } catch (error) {
-      console.error('Error deleting material:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 

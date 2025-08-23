@@ -40,9 +40,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isOpeningVideo, setIsOpeningVideo] = useState(false);
-  const [openError, setOpenError] = useState<string | null>(null);
-
-  // Debug logging
+  const [openError, setOpenError] = useState<string | null>(null);
         // Reset error state when props change
   React.useEffect(() => {
     setError(false);

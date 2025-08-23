@@ -2,6 +2,10 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+// Move module build outputs under a short path to avoid Windows max-path issues for native builds
+// This keeps generated .cxx and intermediate object paths short enough for CMake on Windows.
+buildDir = file("${rootProject.projectDir}/.android_build/app")
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.

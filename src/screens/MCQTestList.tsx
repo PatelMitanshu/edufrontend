@@ -38,9 +38,7 @@ const MCQTestList: React.FC<MCQTestListProps> = ({
       const response = await studentMCQService.getAvailableTests(studentId);
       setTests(response.tests);
       setStudent(response.student);
-    } catch (error) {
-      console.error('Error loading tests:', error);
-      Alert.alert('Error', 'Failed to load tests. Please try again.');
+    } catch (error) {Alert.alert('Error', 'Failed to load tests. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);

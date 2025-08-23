@@ -1,0 +1,4 @@
+ninja: Entering directory `C:\react_native\educationapp\appfrontend\android\app\.cxx\Debug\111so291\x86'
+[0/2] Re-checking globbed directories...
+[1/2] Building CXX object rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/rngesturehandler_codegenJSI-generated.cpp.o
+[2/2] Linking CXX shared library C:\react_native\educationapp\appfrontend\android\.android_build\app\intermediates\cxx\Debug\111so291\obj\x86\libappmodules.so

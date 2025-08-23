@@ -118,9 +118,7 @@ function StudentProfile({ route, navigation }: Props) {
         completedTests,
         averageScore,
       });
-    } catch (error) {
-      console.error('Error loading MCQ statistics:', error);
-      setMcqError(true);
+    } catch (error) {setMcqError(true);
       // Don't show error alert for MCQ stats as it's not critical
     } finally {
       setMcqLoading(false);
@@ -328,6 +326,7 @@ function StudentProfile({ route, navigation }: Props) {
       setEditedStudent({
         name: student?.name || '',
         rollNumber: student?.rollNumber || '',
+        uid: student?.uid || '',
         parentContact: {
           phone: student?.parentContact?.phone || '',
           email: student?.parentContact?.email || ''
@@ -350,6 +349,10 @@ function StudentProfile({ route, navigation }: Props) {
       
       if (editedStudent.rollNumber !== undefined) {
         updateData.rollNumber = editedStudent.rollNumber;
+      }
+      
+      if (editedStudent.uid !== undefined) {
+        updateData.uid = editedStudent.uid;
       }
       
       if (editedStudent.parentContact !== undefined) {
@@ -595,6 +598,7 @@ function StudentProfile({ route, navigation }: Props) {
                       tw['py-3'], 
                       tw['border'], 
                       tw['rounded-xl'],
+                      tw['mb-3'],
                       { 
                         color: theme.colors.text,
                         backgroundColor: theme.colors.background,
@@ -610,6 +614,28 @@ function StudentProfile({ route, navigation }: Props) {
                     placeholder="Roll Number"
                     placeholderTextColor={theme.colors.textMuted}
                   />
+                  <TextInput
+                    style={[
+                      tw['text-base'], 
+                      tw['px-4'], 
+                      tw['py-3'], 
+                      tw['border'], 
+                      tw['rounded-xl'],
+                      { 
+                        color: theme.colors.text,
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderWidth: 1.5,
+                        fontSize: 16,
+                        minHeight: 45,
+                        width: '100%'
+                      }
+                    ]}
+                    value={editedStudent.uid || ''}
+                    onChangeText={(text) => updateField('uid', text)}
+                    placeholder="UID"
+                    placeholderTextColor={theme.colors.textMuted}
+                  />
                 </>
               ) : (
                 <>
@@ -617,6 +643,9 @@ function StudentProfile({ route, navigation }: Props) {
                   <Text style={[tw['text-base'], tw['mb-1'], { color: theme.colors.textSecondary }]}>{student.standard.name}</Text>
                   {student.rollNumber && (
                     <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>Roll No: {student.rollNumber}</Text>
+                  )}
+                  {student.uid && (
+                    <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>UID: {student.uid}</Text>
                   )}
                 </>
               )}
@@ -924,7 +953,5 @@ function StudentProfile({ route, navigation }: Props) {
     </SafeAreaView>
   );
 }
-
-
 
 export default StudentProfile;

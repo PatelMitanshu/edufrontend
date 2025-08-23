@@ -35,9 +35,7 @@ const MCQNavigator: React.FC<MCQNavigatorProps> = ({
   const navigateToResult = (result: any) => {
     const submissionId = result?.result?.submissionId;
     
-    if (!submissionId) {
-      console.error('No submission ID found in result:', result);
-      return;
+    if (!submissionId) {return;
     }
     
     setNavigation({

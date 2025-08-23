@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,9 @@ import {
   LayoutAnimation,
   UIManager,
   Platform,
+  Modal,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,6 +23,8 @@ import LoadingScreen from '../components/LoadingScreen';
 import { Student, studentService } from '../services/studentService';
 import { RootStackParamList } from '../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { pick, types } from '@react-native-documents/picker';
+import * as XLSX from 'xlsx';
 
 interface DraggableStudentCardProps {
   student: Student;
@@ -305,6 +310,11 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
               Roll No: {student.rollNumber}
             </Text>
           )}
+          {student.uid && (
+            <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>
+              UID: {student.uid}
+            </Text>
+          )}
           {student.parentContact?.phone && (
             <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>
               📞 {student.parentContact.phone}
@@ -347,6 +357,11 @@ export default function DivisionDetail({ route, navigation }: Props) {
   const [draggedStudentId, setDraggedStudentId] = useState<string | null>(null);
   const [tempStudents, setTempStudents] = useState<Student[]>([]);
   const [globalIsDragging, setGlobalIsDragging] = useState(false);
+  
+  // Excel import states
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showAddOptionsModal, setShowAddOptionsModal] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
 
   // LayoutAnimation is automatically enabled in New Architecture
   // No need for experimental setup
@@ -377,7 +392,7 @@ export default function DivisionDetail({ route, navigation }: Props) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={handleAddStudent}
+            onPress={() => setShowAddOptionsModal(true)}
             style={[
               tw['px-4'],
               tw['py-2'],
@@ -422,6 +437,322 @@ export default function DivisionDetail({ route, navigation }: Props) {
     });
   };
 
+  const handleExcelImport = async () => {
+    try {
+      const result = await pick({
+        type: [types.xls, types.xlsx],
+        allowMultiSelection: false,
+      });
+
+      if (result && result.length > 0) {
+        const file = result[0];
+        processExcelFile(file);
+      }
+    } catch (error: any) {
+      if (error.message !== 'User canceled document picker') {
+        Alert.alert('Error', 'Failed to pick Excel file');
+      }
+    }
+  };
+
+  const processExcelFile = async (file: any) => {
+    try {
+      setImportLoading(true);
+      
+      // Read file content
+      const response = await fetch(file.uri);
+      const arrayBuffer = await response.arrayBuffer();
+      
+      // Parse Excel file
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      // Convert to JSON with headers from first row
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      if (jsonData.length < 2) {
+        Alert.alert('Error', 'Excel file must contain at least a header row and one data row');
+        return;
+      }
+      
+      const headers = jsonData[0] as string[];
+      const rows = jsonData.slice(1) as any[][];
+      
+      // Map column names (support English and Gujarati)
+      const columnMap = mapExcelColumns(headers);
+      
+      if (!columnMap.name || !columnMap.uid || !columnMap.mobile) {
+        Alert.alert(
+          'Error', 
+          'Excel file must contain columns for Name, UID, and Mobile Number. Please check the required format.'
+        );
+        return;
+      }
+      
+      // Process students data
+      const studentsData = [];
+      const errors = [];
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const rowNumber = i + 2; // +2 because we start from row 2 (after header)
+        
+        // Skip completely empty rows
+        if (!row || row.length === 0 || row.every(cell => cell === null || cell === undefined || cell === '')) {
+          continue;
+        }
+        
+        try {
+          const studentData = parseStudentRow(row, columnMap, rowNumber);
+          if (studentData) {
+            studentsData.push(studentData);
+          }
+        } catch (error: any) {
+          errors.push(`Row ${rowNumber}: ${error.message}`);
+        }
+      }
+      
+      if (errors.length > 0) {
+        Alert.alert(
+          'Import Errors', 
+          `Found ${errors.length} error(s):\n\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n...and more' : ''}\n\nFix these errors and try again.`
+        );
+        return;
+      }
+      
+      if (studentsData.length === 0) {
+        Alert.alert('Error', 'No valid student data found in the Excel file');
+        return;
+      }
+      
+      // Import students
+      await importStudentsBatch(studentsData);
+      
+    } catch (error: any) {
+      Alert.alert('Error', `Failed to process Excel file: ${error.message}`);
+    } finally {
+      setImportLoading(false);
+      setShowImportModal(false);
+    }
+  };
+
+  const mapExcelColumns = (headers: string[]) => {
+    const columnMap: any = {};
+    
+    headers.forEach((header, index) => {
+      const cleanHeader = header.toString().toLowerCase().trim();
+      
+      // Name mapping (be more specific for "નામ")
+      if (cleanHeader === 'નામ' || cleanHeader === 'name' || 
+          cleanHeader.includes('student name') || cleanHeader.includes('student નામ')) {
+        columnMap.name = index;
+      }
+      // UID mapping (including specific "ચાઇલ્ડ UID" format)
+      else if (cleanHeader.includes('ચાઇલ્ડ uid') || cleanHeader.includes('child uid') ||
+               cleanHeader === 'ચાઇલ્ડ uid' || cleanHeader === 'child uid' ||
+               cleanHeader.includes('uid') || cleanHeader.includes('id') || cleanHeader.includes('આઈડી')) {
+        columnMap.uid = index;
+      }
+      // Mobile mapping (specifically look for "મોબાઇલ નંબર 1" - be more specific)
+      else if (cleanHeader.includes('મોબાઇલ નંબર 1') || cleanHeader.includes('mobile number 1') || 
+               (cleanHeader.includes('mobile') && cleanHeader.includes('1') && !cleanHeader.includes('2')) ||
+               (cleanHeader.includes('મોબાઇલ') && cleanHeader.includes('1') && !cleanHeader.includes('2')) ||
+               (cleanHeader.includes('phone') && cleanHeader.includes('1') && !cleanHeader.includes('2'))) {
+        columnMap.mobile = index;
+      }
+      // Email mapping (optional)
+      else if (cleanHeader.includes('email') || cleanHeader.includes('ઈમેલ')) {
+        columnMap.email = index;
+      }
+      // Roll number mapping (optional)
+      else if (cleanHeader.includes('roll') || cleanHeader.includes('રોલ')) {
+        columnMap.rollNumber = index;
+      }
+      // Date of birth mapping (including specific "જન્મતારીખ (dd-mm-yyyy)" format)
+      else if (cleanHeader.includes('જન્મતારીખ') || cleanHeader.includes('birth') || cleanHeader.includes('dob') || 
+               cleanHeader.includes('જન્મ') || cleanHeader.includes('તારીખ')) {
+        columnMap.dateOfBirth = index;
+      }
+    });
+    
+    return columnMap;
+  };
+
+  const parseStudentRow = (row: any[], columnMap: any, rowNumber: number) => {
+    // Required fields validation
+    const rawName = row[columnMap.name];
+    const rawUid = row[columnMap.uid];
+    const rawMobile = row[columnMap.mobile];
+    
+    // Clean and validate name
+    let name = '';
+    if (rawName !== null && rawName !== undefined) {
+      name = rawName.toString().trim();
+    }
+    
+    if (!name || name.length === 0) {
+      throw new Error(`Name is required. Got: "${rawName}" (cleaned: "${name}")`);
+    }
+    
+    // Clean and validate UID
+    let uid = '';
+    if (rawUid !== null && rawUid !== undefined) {
+      uid = rawUid.toString().trim();
+    }
+    
+    if (!uid || uid.length === 0) {
+      throw new Error(`UID is required. Got: "${rawUid}" (cleaned: "${uid}")`);
+    }
+    
+    if (!rawMobile && rawMobile !== 0) {
+      throw new Error('Mobile number is required');
+    }
+    
+    // Clean and validate mobile number
+    let mobile = '';
+    if (rawMobile !== null && rawMobile !== undefined) {
+      let mobileStr = rawMobile.toString();
+      
+      // Handle scientific notation (like 9.37484e+9)
+      if (mobileStr.includes('e+') || mobileStr.includes('E+')) {
+        // Convert scientific notation to normal number
+        const num = parseFloat(mobileStr);
+        mobileStr = Math.round(num).toString();
+      }
+      
+      // Remove all non-digit characters (spaces, dashes, brackets, etc.)
+      mobile = mobileStr.replace(/\D/g, '');
+      
+      // Handle numbers that might have country code (+91)
+      if (mobile.length === 12 && mobile.startsWith('91')) {
+        mobile = mobile.substring(2); // Remove +91
+      }
+      
+      // Check if mobile number is exactly 10 digits
+      if (!mobile || mobile.length !== 10) {
+        throw new Error(`Mobile number must be exactly 10 digits. Got: "${rawMobile}" (cleaned: "${mobile}", length: ${mobile.length})`);
+      }
+      
+      // Validate that it starts with valid digits (Indian mobile numbers start with 6-9)
+      if (!/^[6-9]\d{9}$/.test(mobile)) {
+        throw new Error(`Mobile number must start with 6-9 and be 10 digits. Got: "${rawMobile}" (cleaned: "${mobile}")`);
+      }
+    } else {
+      throw new Error('Mobile number is required');
+    }
+    
+    // Optional fields
+    const email = columnMap.email !== undefined ? row[columnMap.email]?.toString().trim() : '';
+    const rollNumber = columnMap.rollNumber !== undefined ? row[columnMap.rollNumber]?.toString().trim() : '';
+    let dateOfBirth = columnMap.dateOfBirth !== undefined ? row[columnMap.dateOfBirth]?.toString().trim() : '';
+    
+    // Validate email if provided
+    if (email && !/\S+@\S+\.\S+/.test(email)) {
+      throw new Error('Invalid email format');
+    }
+    
+    // Validate email if provided
+    if (email && !/\S+@\S+\.\S+/.test(email)) {
+      throw new Error('Invalid email format');
+    }
+    
+    // Handle date format conversion from various Excel formats to yyyy-mm-dd
+    if (dateOfBirth) {
+      let convertedDate = '';
+      
+      // Remove any extra spaces and convert to string
+      const dateStr = dateOfBirth.toString().trim();
+      
+      // Check if it's an Excel date serial number (like 41283)
+      if (/^\d{5}$/.test(dateStr)) {
+        // Convert Excel serial date to JavaScript date
+        const excelEpoch = new Date(1900, 0, 1);
+        const jsDate = new Date(excelEpoch.getTime() + (parseInt(dateStr) - 2) * 24 * 60 * 60 * 1000);
+        const day = jsDate.getDate().toString().padStart(2, '0');
+        const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
+        const year = jsDate.getFullYear();
+        convertedDate = `${year}-${month}-${day}`;
+      }
+      // Check if it's in dd-mm-yyyy format
+      else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split('-');
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        convertedDate = `${year}-${month}-${day}`;
+      }
+      // Check if it's in dd/mm/yyyy format
+      else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split('/');
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        convertedDate = `${year}-${month}-${day}`;
+      }
+      // Check if it's already in yyyy-mm-dd format
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        convertedDate = dateStr;
+      }
+      // Check if it's in ISO date format
+      else if (Date.parse(dateStr)) {
+        const jsDate = new Date(dateStr);
+        const day = jsDate.getDate().toString().padStart(2, '0');
+        const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
+        const year = jsDate.getFullYear();
+        convertedDate = `${year}-${month}-${day}`;
+      }
+      else {
+        throw new Error(`Date of Birth format not recognized. Expected dd-mm-yyyy format, got: ${dateStr}`);
+      }
+      
+      // Validate the final converted date
+      const parsedDate = new Date(convertedDate);
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error(`Invalid date of birth: ${dateStr}`);
+      }
+      
+      dateOfBirth = convertedDate;
+    }
+    
+    return {
+      name,
+      rollNumber: undefined, // Keep rollNumber separate from UID
+      uid: uid, // Map UID to uid field
+      standardId: standardId, // Backend expects standardId, not standard
+      divisionId: divisionId, // Backend expects divisionId, not division
+      dateOfBirth: dateOfBirth || undefined,
+      parentContact: {
+        phone: mobile,
+        email: email || undefined,
+      },
+    };
+  };
+
+  const importStudentsBatch = async (studentsData: any[]) => {
+    try {
+      // Generate temporary IDs for preview
+      const studentsWithIds = studentsData.map((student, index) => ({
+        ...student,
+        id: `temp_${Date.now()}_${index}`, // Temporary ID for preview
+      }));
+
+      // Navigate to preview screen using push to avoid type issues
+      (navigation as any).navigate('StudentImportPreview', {
+        students: studentsWithIds,
+        divisionName: divisionName,
+        standardName: standardName,
+      });
+
+      // Close the import modal
+      setShowImportModal(false);
+      setImportLoading(false);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to prepare student preview');
+      setImportLoading(false);
+    }
+  };
+
   const handleEditDivision = () => {
     navigation.navigate('EditDivision', { divisionId });
   };
@@ -436,7 +767,7 @@ export default function DivisionDetail({ route, navigation }: Props) {
         studentId: student._id,
         position: index
       }));await AsyncStorage.setItem(`student_positions_${divisionId}`, JSON.stringify(positions));} catch (error) {
-      console.error('Error saving positions:', error);
+      // Error saving positions - continue silently
     }
   };
 
@@ -448,7 +779,7 @@ export default function DivisionDetail({ route, navigation }: Props) {
         });return sortedStudents;
       }
     } catch (error) {
-      console.error('Error loading positions:', error);
+      // Error loading positions - continue with default order
     }return students;
   };
 
@@ -562,7 +893,7 @@ export default function DivisionDetail({ route, navigation }: Props) {
               tw['rounded-full'],
               { backgroundColor: theme.colors.primary }
             ]}
-            onPress={handleAddStudent}
+            onPress={() => setShowAddOptionsModal(true)}
           >
             <Text style={[tw['text-base'], tw['font-semibold'], { color: theme.colors.surface }]}>
               Add First Student
@@ -584,6 +915,190 @@ export default function DivisionDetail({ route, navigation }: Props) {
           keyboardShouldPersistTaps="handled"
         />
       )}
+
+      {/* Add Options Modal */}
+      <Modal
+        visible={showAddOptionsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowAddOptionsModal(false)}
+      >
+        <View style={[tw['flex-1'], tw['justify-center'], tw['items-center'], { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[
+            tw['p-6'], 
+            tw['rounded-3xl'],
+            { backgroundColor: theme.colors.surface, width: '90%', maxWidth: 350 }
+          ]}>
+            <Text style={[tw['text-xl'], tw['font-bold'], tw['mb-6'], tw['text-center'], { color: theme.colors.text }]}>
+              Add Students
+            </Text>
+            
+            <TouchableOpacity
+              style={[
+                tw['p-4'], 
+                tw['rounded-2xl'], 
+                tw['mb-3'], 
+                tw['items-center'],
+                { backgroundColor: theme.colors.primary, width: '100%' }
+              ]}
+              onPress={() => {
+                setShowAddOptionsModal(false);
+                handleAddStudent();
+              }}
+            >
+              <Text style={[tw['text-lg'], tw['font-semibold'], { color: theme.colors.surface }]}>
+                👤 Add Manually
+              </Text>
+              <Text style={[tw['text-sm'], tw['mt-1'], { color: theme.colors.surface + '90' }]}>
+                Add one student at a time
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                tw['p-4'], 
+                tw['rounded-2xl'], 
+                tw['mb-4'], 
+                tw['items-center'],
+                { backgroundColor: theme.colors.primary, width: '100%' }
+              ]}
+              onPress={() => {
+                setShowAddOptionsModal(false);
+                setShowImportModal(true);
+              }}
+            >
+              <Text style={[tw['text-lg'], tw['font-semibold'], { color: theme.colors.surface }]}>
+                📊 Import from Excel
+              </Text>
+              <Text style={[tw['text-sm'], tw['mt-1'], { color: theme.colors.surface + '90' }]}>
+                Bulk import from spreadsheet
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[tw['p-3'], tw['items-center'], { width: '100%' }]}
+              onPress={() => setShowAddOptionsModal(false)}
+            >
+              <Text style={[tw['text-base'], tw['font-medium'], { color: theme.colors.textSecondary }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Excel Import Modal */}
+      <Modal
+        visible={showImportModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowImportModal(false)}
+      >
+        <View style={[tw['flex-1'], tw['justify-center'], tw['items-center'], { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[
+            tw['rounded-3xl'],
+            { backgroundColor: theme.colors.surface, width: '90%', maxWidth: 450, maxHeight: '85%' }
+          ]}>
+            <ScrollView style={[tw['p-6']]} showsVerticalScrollIndicator={false}>
+              <Text style={[tw['text-xl'], tw['font-bold'], tw['mb-4'], tw['text-center'], { color: theme.colors.text }]}>
+                Import Students from Excel
+              </Text>
+              
+              <View style={[tw['mb-6'], tw['p-4'], tw['rounded-2xl'], { backgroundColor: theme.colors.background }]}>
+                <Text style={[tw['text-base'], tw['font-semibold'], tw['mb-3'], { color: theme.colors.text }]}>
+                  📋 Required Columns:
+                </Text>
+                <Text style={[tw['text-sm'], tw['mb-2'], { color: theme.colors.textSecondary }]}>
+                  • <Text style={[tw['font-semibold']]}>નામ</Text> - Student's full name
+                </Text>
+                <Text style={[tw['text-sm'], tw['mb-2'], { color: theme.colors.textSecondary }]}>
+                  • <Text style={[tw['font-semibold']]}>ચાઇલ્ડ UID</Text> - Unique student ID
+                </Text>
+                <Text style={[tw['text-sm'], tw['mb-3'], { color: theme.colors.textSecondary }]}>
+                  • <Text style={[tw['font-semibold']]}>મોબાઇલ નંબર 1</Text> - 10-digit phone number
+                </Text>
+                
+                <Text style={[tw['text-base'], tw['font-semibold'], tw['mb-3'], { color: theme.colors.text }]}>
+                  📝 Optional Columns:
+                </Text>
+                <Text style={[tw['text-sm'], tw['mb-2'], { color: theme.colors.textSecondary }]}>
+                  • <Text style={[tw['font-semibold']]}>Email</Text> (ઈમેલ) - Parent's email address
+                </Text>
+                <Text style={[tw['text-sm'], tw['mb-2'], { color: theme.colors.textSecondary }]}>
+                  • <Text style={[tw['font-semibold']]}>Roll Number</Text> (રોલ) - Student's roll number
+                </Text>
+                <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>
+                  • <Text style={[tw['font-semibold']]}>જન્મતારીખ (dd-mm-yyyy)</Text> - Date of birth in dd-mm-yyyy format
+                </Text>
+              </View>
+              
+              <View style={[tw['mb-6'], tw['p-4'], tw['rounded-2xl'], { backgroundColor: theme.colors.background }]}>
+                <Text style={[tw['text-base'], tw['font-semibold'], tw['mb-3'], { color: theme.colors.text }]}>
+                  📊 Example Excel Format:
+                </Text>
+                <View style={[tw['bg-white'], tw['p-3'], tw['rounded-lg'], tw['border'], { borderColor: theme.colors.primary + '30' }]}>
+                  <Text style={[tw['text-xs'], { color: '#000', fontFamily: 'monospace' }]}>
+                    ચાઇલ્ડ UID | નામ      | મોબાઇલ નંબર 1 | જન્મતારીખ (dd-mm-yyyy){'\n'}
+                    001       | રાજ પટેલ  | 9876543210   | 15-08-2010{'\n'}
+                    002       | નીતા શાહ  | 9876543211   | 22-03-2011{'\n'}
+                    003       | અમિત પટેલ | 9876543212   | 10-12-2010
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={[tw['mb-6'], tw['p-4'], tw['rounded-2xl'], { backgroundColor: '#FFF3CD' }]}>
+                <Text style={[tw['text-sm'], tw['font-medium'], { color: '#856404' }]}>
+                  💡 Tips:{'\n'}
+                  • Use exact column names: ચાઇલ્ડ UID, નામ, મોબાઇલ નંબર 1{'\n'}
+                  • First row should contain column headers{'\n'}
+                  • Mobile numbers must be exactly 10 digits{'\n'}
+                  • Date format: dd-mm-yyyy (e.g., 15-08-2010){'\n'}
+                  • Email format will be validated if provided
+                </Text>
+              </View>
+              
+              <TouchableOpacity
+                style={[
+                  tw['p-4'], 
+                  tw['rounded-2xl'], 
+                  tw['mb-3'], 
+                  tw['items-center'],
+                  { 
+                    backgroundColor: importLoading ? theme.colors.textSecondary : theme.colors.primary,
+                    opacity: importLoading ? 0.7 : 1,
+                    width: '100%'
+                  }
+                ]}
+                onPress={handleExcelImport}
+                disabled={importLoading}
+              >
+                {importLoading ? (
+                  <ActivityIndicator size="small" color={theme.colors.surface} />
+                ) : (
+                  <>
+                    <Text style={[tw['text-lg'], tw['font-semibold'], { color: theme.colors.surface }]}>
+                      📁 Choose Excel File
+                    </Text>
+                    <Text style={[tw['text-sm'], tw['mt-1'], { color: theme.colors.surface + '90' }]}>
+                      Select .xlsx or .xls file
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[tw['p-3'], tw['items-center'], { width: '100%' }]}
+                onPress={() => setShowImportModal(false)}
+                disabled={importLoading}
+              >
+                <Text style={[tw['text-base'], tw['font-medium'], { color: theme.colors.textSecondary }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

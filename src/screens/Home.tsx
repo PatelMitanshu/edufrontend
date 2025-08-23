@@ -103,9 +103,7 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
     try {
       const plans = await lessonPlanService.getLessonPlans();
       setLessonPlans(plans);
-    } catch (error) {
-      console.error('Error loading lesson plans:', error);
-      Alert.alert('Error', 'Failed to load lesson plans. Please try again.');
+    } catch (error) {Alert.alert('Error', 'Failed to load lesson plans. Please try again.');
     }
   };
 
@@ -202,9 +200,7 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
         const newPlan = await lessonPlanService.createLessonPlan(lessonPlanData);
         setLessonPlans([...lessonPlans, newPlan]);
       }
-    } catch (error) {
-      console.error('Error saving lesson plan:', error);
-      Alert.alert('Error', 'Failed to save lesson plan. Please try again.');
+    } catch (error) {Alert.alert('Error', 'Failed to save lesson plan. Please try again.');
     }
   };
 
@@ -229,9 +225,7 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
                 plan.id !== id && plan._id !== id
               );
               setLessonPlans(updatedPlans);
-            } catch (error) {
-              console.error('Error deleting lesson plan:', error);
-              Alert.alert('Error', 'Failed to delete lesson plan. Please try again.');
+            } catch (error) {Alert.alert('Error', 'Failed to delete lesson plan. Please try again.');
             }
           },
         },
@@ -248,9 +242,7 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
           : plan
       );
       setLessonPlans(updatedPlans);
-    } catch (error) {
-      console.error('Error toggling lesson plan completion:', error);
-      Alert.alert('Error', 'Failed to update lesson plan. Please try again.');
+    } catch (error) {Alert.alert('Error', 'Failed to update lesson plan. Please try again.');
     }
   };
 

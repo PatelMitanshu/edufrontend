@@ -22,12 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
-    console.error('ErrorBoundary caught an error:', error);
-    console.error('Error info:', errorInfo);
-    console.error('Stack trace:', error.stack);
-    
-    if (this.props.onError) {
+  componentDidCatch(error: Error, errorInfo: any) {if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
   }

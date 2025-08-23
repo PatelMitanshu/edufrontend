@@ -15,6 +15,7 @@ export interface Student {
     fullName: string;
   };
   rollNumber?: string;
+  uid?: string;
   dateOfBirth?: string;
   parentContact?: {
     phone?: string;
@@ -36,9 +37,10 @@ export interface Student {
 
 export interface CreateStudentData {
   name: string;
-  standard: string;
-  division: string;
+  standardId: string; // Backend expects standardId
+  divisionId: string; // Backend expects divisionId
   rollNumber?: string;
+  uid?: string;
   dateOfBirth?: string;
   parentContact?: {
     phone?: string;

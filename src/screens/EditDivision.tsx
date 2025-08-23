@@ -49,9 +49,7 @@ export default function EditDivision({ route, navigation }: Props) {
       setDivision(response.division);
       setName(response.division.name);
       setDescription(response.division.description || '');
-    } catch (error) {
-      console.error('Error loading division:', error);
-      Alert.alert('Error', 'Failed to load division details');
+    } catch (error) {Alert.alert('Error', 'Failed to load division details');
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -86,9 +84,7 @@ export default function EditDivision({ route, navigation }: Props) {
           },
         ]
       );
-    } catch (error: any) {
-      console.error('Error updating division:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to update division';
+    } catch (error: any) {const errorMessage = error.response?.data?.message || 'Failed to update division';
       Alert.alert('Error', errorMessage);
     } finally {
       setSaving(false);

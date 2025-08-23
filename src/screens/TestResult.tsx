@@ -39,9 +39,7 @@ const TestResult: React.FC<TestResultProps> = ({
     try {
       const response = await studentMCQService.getTestResult(submissionId);
       setResult(response.result);
-    } catch (error) {
-      console.error('Error loading result:', error);
-      Alert.alert('Error', 'Failed to load test result.');
+    } catch (error) {Alert.alert('Error', 'Failed to load test result.');
     } finally {
       setLoading(false);
     }

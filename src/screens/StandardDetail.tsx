@@ -65,9 +65,7 @@ export default function StandardDetail({ route, navigation }: Props) {
       setLoading(true);
       const response = await divisionService.getDivisionsByStandard(standardId);
       setDivisions(response.divisions || []);
-    } catch (error: any) {
-      console.error('Error loading divisions:', error);
-      // If it's a 404 or network error, show empty state instead of error
+    } catch (error: any) {// If it's a 404 or network error, show empty state instead of error
       if (error.response?.status === 404 || error.response?.data?.error === 'Standard not found') {
         setDivisions([]);
       } else {

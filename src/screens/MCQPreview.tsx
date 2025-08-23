@@ -101,9 +101,7 @@ export default function MCQPreview({ route, navigation }: Props) {
           },
         ]
       );
-    } catch (error) {
-      console.error('Error saving MCQ:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save MCQ test. Please try again.');
+    } catch (error) {Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save MCQ test. Please try again.');
     } finally {
       setIsSaving(false);
     }

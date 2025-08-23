@@ -76,9 +76,7 @@ class StudentMCQService {
   private async getAuthToken(): Promise<string | null> {
     try {
       return await AsyncStorage.getItem('authToken');
-    } catch (error) {
-      console.error('Error getting auth token:', error);
-      return null;
+    } catch (error) {return null;
     }
   }
 
@@ -107,9 +105,7 @@ class StudentMCQService {
       }
 
       return result;
-    } catch (error) {
-      console.error('Error fetching available tests:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -139,9 +135,7 @@ class StudentMCQService {
       }
 
       return result;
-    } catch (error) {
-      console.error('Error fetching test questions:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -163,9 +157,7 @@ class StudentMCQService {
       }
 
       return result;
-    } catch (error) {
-      console.error('Error submitting test:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -202,9 +194,7 @@ class StudentMCQService {
       }
 
       return result;
-    } catch (error) {
-      console.error('Error fetching test history:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 
@@ -233,9 +223,7 @@ class StudentMCQService {
       }
 
       return result;
-    } catch (error) {
-      console.error('Error fetching test result:', error);
-      throw error;
+    } catch (error) {throw error;
     }
   }
 }

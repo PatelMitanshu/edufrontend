@@ -99,9 +99,7 @@ const TakeTest: React.FC<TakeTestProps> = ({
       setQuestions(response.mcqTest.questions || []);
       setTimeRemaining((response.mcqTest.timeLimit || 30) * 60); // Convert minutes to seconds
       setAnswers(new Array((response.mcqTest.questions || []).length).fill({ selectedAnswer: -1, timeTaken: 0 }));
-    } catch (error) {
-      console.error('Error loading test:', error);
-      Alert.alert('Error', 'Failed to load test. Please try again.');
+    } catch (error) {Alert.alert('Error', 'Failed to load test. Please try again.');
       onGoBack();
     } finally {
       setLoading(false);
@@ -171,9 +169,7 @@ const TakeTest: React.FC<TakeTestProps> = ({
       } else {
         throw new Error('Invalid response from server');
       }
-    } catch (error) {
-      console.error('Error submitting test:', error);
-      Alert.alert('Error', 'Failed to submit test. Please try again.');
+    } catch (error) {Alert.alert('Error', 'Failed to submit test. Please try again.');
     } finally {
       setSubmitting(false);
     }

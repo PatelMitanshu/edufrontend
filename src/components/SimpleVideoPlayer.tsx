@@ -33,9 +33,7 @@ const SimpleVideoPlayer: React.FC<SimpleVideoPlayerProps> = ({
     Linking.openURL(videoUri)
       .then(() => {onClose(); // Close the modal after opening
       })
-      .catch((error) => {
-        console.error('Failed to open video:', error);
-        Alert.alert(
+      .catch((error) => {Alert.alert(
           'Cannot Open Video', 
           'Unable to open the video. The URL might be invalid or the video may not be properly uploaded.',
           [
@@ -137,7 +135,6 @@ const SimpleVideoPlayer: React.FC<SimpleVideoPlayerProps> = ({
             Video will open in external player
           </Text>
           
-          {/* Debug Info */}
           {videoUri && (
             <TouchableOpacity 
               style={[tw['mt-4'], tw['p-2']]}

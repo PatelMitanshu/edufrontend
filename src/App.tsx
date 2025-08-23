@@ -34,6 +34,11 @@ export type RootStackParamList = {
   };
   AddUpload: { studentId: string };
   AddStandard: undefined;
+  StudentImportPreview: {
+    students: any[];
+    divisionName: string;
+    standardName: string;
+  };
 };
 
 export type DrawerParamList = {
@@ -61,6 +66,7 @@ import StudentProfile from './screens/StudentProfile';
 import AddStudent from './screens/AddStudent';
 import AddUpload from './screens/AddUpload';
 import AddStandard from './screens/AddStandard';
+import StudentImportPreview from './screens/StudentImportPreview';
 import SplashScreen from './components/SplashScreen';
 import LoadingScreen from './components/LoadingScreen';
 import CustomDrawerContent from './components/CustomDrawerContent';
@@ -246,6 +252,13 @@ function App() {
                 headerStyle: { backgroundColor: '#007BFF' },
                 headerTintColor: '#fff',
                 headerTitleStyle: { fontWeight: 'bold' }
+              }} 
+            />
+            <Stack.Screen 
+              name="StudentImportPreview" 
+              component={StudentImportPreview} 
+              options={{ 
+                headerShown: false
               }} 
             />
           </Stack.Navigator>

@@ -54,10 +54,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setCurrentTime(data.currentTime);
   };
 
-  const handleError = (error: any) => {
-    console.error('Video player error:', error);
-    console.error('Failed video URL:', videoUri);
-    setLoading(false);
+  const handleError = (error: any) => {setLoading(false);
     Alert.alert('Error', `Failed to load video: ${error.error || 'Unknown error'}`);
     onClose();
   };

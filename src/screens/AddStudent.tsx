@@ -26,6 +26,7 @@ function AddStudent({ route, navigation }: Props) {
   const { theme } = useTheme();
   const [name, setName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
+  const [uid, setUid] = useState('');
   const [parentPhone, setParentPhone] = useState('');
   const [parentEmail, setParentEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -53,7 +54,6 @@ function AddStudent({ route, navigation }: Props) {
       const response = await divisionService.getDivisionsByStandard(standardId);
       setDivisions(response.divisions);
     } catch (error) {
-      console.error('Error loading divisions:', error);
       Alert.alert('Error', 'Failed to load divisions');
     } finally {
       setLoadingDivisions(false);
@@ -100,9 +100,10 @@ function AddStudent({ route, navigation }: Props) {
 
       const studentData = {
         name: name.trim(),
-        standard: standardId,
-        division: selectedDivisionId,
+        standardId: standardId,
+        divisionId: selectedDivisionId,
         rollNumber: rollNumber.trim() || undefined,
+        uid: uid.trim() || undefined,
         dateOfBirth: dateOfBirth.trim() || undefined,
         parentContact: {
           phone: parentPhone || undefined,
@@ -251,6 +252,27 @@ function AddStudent({ route, navigation }: Props) {
               placeholderTextColor={theme.colors.textSecondary}
               value={rollNumber}
               onChangeText={setRollNumber}
+            />
+          </View>
+
+          {/* UID */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              UID (Optional)
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.colors.surface,
+                  color: theme.colors.text,
+                  borderColor: theme.colors.primary + '30',
+                }
+              ]}
+              placeholder="Enter UID"
+              placeholderTextColor={theme.colors.textSecondary}
+              value={uid}
+              onChangeText={setUid}
             />
           </View>
 

@@ -37,9 +37,7 @@ const TestHistory: React.FC<TestHistoryProps> = ({
     try {
       const response = await studentMCQService.getTestHistory(studentId);
       setTestHistory(response.testHistory);
-    } catch (error) {
-      console.error('Error loading test history:', error);
-      Alert.alert('Error', 'Failed to load test history. Please try again.');
+    } catch (error) {Alert.alert('Error', 'Failed to load test history. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -4,11 +4,7 @@ const supabaseUrl = 'https://qdvdptbkzlpzcormseaz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkdmRwdGJremxwemNvcm1zZWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3NzkxOTIsImV4cCI6MjA3MTM1NTE5Mn0.5xGAIHzKinP9NNJjAEjo_4d7D3dAUaeU75OCUrzLN60';
 
 // Validate configuration
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Supabase configuration missing!');
-  console.error('URL:', supabaseUrl);
-  console.error('Key:', supabaseAnonKey ? 'Present' : 'Missing');
-}
+if (!supabaseUrl || !supabaseAnonKey) {}
 
 // Create Supabase client with React Native optimized settings
 let supabase: SupabaseClient | null = null;
@@ -22,24 +18,15 @@ try {
   });
   // Test storage access
   if (supabase.storage) {
-  } else {
-    console.warn('⚠️ Supabase Storage service not available');
-  }
+  } else {}
   
-} catch (error) {
-  console.error('❌ Failed to create Supabase client:', error);
-  if (error instanceof Error) {
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-  }
+} catch (error) {if (error instanceof Error) {}
   supabase = null;
 }
 
 // Safe getter function
 export function getSupabaseClient(): SupabaseClient | null {
-  if (!supabase) {
-    console.warn('⚠️ Supabase client not available');
-  }
+  if (!supabase) {}
   return supabase;
 }
 

@@ -32,9 +32,7 @@ api.interceptors.request.use(
       const token = await AsyncStorage.getItem('authToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-      }
-      
-      // Debug logging for settings requests
+      }
     } catch (error) {
       // Token error handled silently
     }

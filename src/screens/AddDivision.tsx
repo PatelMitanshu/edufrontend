@@ -76,9 +76,7 @@ export default function AddDivision({ route, navigation }: Props) {
           onPress: () => navigation.goBack(),
         },
       ]);
-    } catch (error: any) {
-      console.error('Error creating division:', error);
-      const errorMessage = error.response?.data?.error || 'Failed to create division';
+    } catch (error: any) {const errorMessage = error.response?.data?.error || 'Failed to create division';
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
