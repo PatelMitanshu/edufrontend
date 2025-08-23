@@ -378,8 +378,13 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
       <View style={[tw['px-5'], tw['py-6'], tw['bg-white'], tw['mb-2']]}>
         <View style={[tw['mb-4']]}>
           <View style={[tw['flex-row'], tw['items-center'], tw['justify-between']]}>
-            <View style={[tw['flex-1'], tw['mr-3']]}>
-              <Text style={[tw['text-xl'], tw['font-extrabold'], tw['text-gray-800'], tw['tracking-wide']]}>
+            <View style={[tw['flex-1'], tw['mr-3']]}> 
+              {/* Keep title constrained so long text doesn't push the Add button off-screen */}
+              <Text
+                numberOfLines={1}
+                ellipsizeMode={'tail'}
+                style={[tw['text-xl'], tw['font-extrabold'], tw['text-gray-800'], tw['tracking-wide']]}
+              >
                 Lesson Plans
               </Text>
             </View>
@@ -391,6 +396,7 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
                 tw['rounded-xl'],
                 tw['items-center'],
                 tw['shadow-lg'],
+                { minWidth: 72 }, // reserve space for the button so it can't be pushed out
               ]}
               onPress={() => setShowAddLessonPlan(true)}
               activeOpacity={0.7}
