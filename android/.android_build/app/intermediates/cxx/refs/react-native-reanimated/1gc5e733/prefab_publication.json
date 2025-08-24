@@ -1,5 +1,5 @@
 {
-  "installationFolder": "C:\\react_native\\educationapp\\appfrontend\\node_modules\\react-native-reanimated\\android\\build\\intermediates\\prefab_package\\release\\prefab",
+  "installationFolder": "C:\\react_native\\educationapp\\appfrontend\\node_modules\\react-native-reanimated\\android\\build\\intermediates\\prefab_package\\debug\\prefab",
   "gradlePath": ":react-native-reanimated",
   "packageInfo": {
     "packageName": "react-native-reanimated",

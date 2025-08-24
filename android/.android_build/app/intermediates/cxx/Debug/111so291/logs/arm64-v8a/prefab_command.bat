@@ -16,7 +16,7 @@
   --ndk-version ^
   27 ^
   --output ^
-  "C:\\Users\\mitan\\AppData\\Local\\Temp\\agp-prefab-staging14325398999899771314\\staged-cli-output" ^
+  "C:\\Users\\mitan\\AppData\\Local\\Temp\\agp-prefab-staging7317253098197123975\\staged-cli-output" ^
   "C:\\Users\\mitan\\.gradle\\caches\\8.14.1\\transforms\\1d221509c521a46e74f6572064742339\\transformed\\react-android-0.80.1-debug\\prefab" ^
   "C:\\react_native\\educationapp\\appfrontend\\android\\.android_build\\app\\intermediates\\cxx\\refs\\react-native-reanimated\\1gc5e733" ^
   "C:\\Users\\mitan\\.gradle\\caches\\8.14.1\\transforms\\816951bc71efb4c99db481b15113489d\\transformed\\hermes-android-0.80.1-debug\\prefab" ^

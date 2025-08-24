@@ -40,7 +40,8 @@ const FileViewer: React.FC<FileViewerProps> = ({
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isOpeningVideo, setIsOpeningVideo] = useState(false);
-  const [openError, setOpenError] = useState<string | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
+
         // Reset error state when props change
   React.useEffect(() => {
     setError(false);
@@ -128,7 +129,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
     }
 
     if (isVideo) {
-      const tryOpenVideo = async (attempt = 0) => {
+      const tryOpenVideo = async (attempt = 0): Promise<void> => {
         setIsOpeningVideo(true);
         setOpenError(null);
         try {

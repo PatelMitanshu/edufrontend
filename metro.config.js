@@ -14,7 +14,7 @@ const config = {
         keep_fnames: false,
       },
       compress: {
-        drop_console: true, // Remove console.log statements in production
+        drop_console: false, // Keep console for debugging release issues temporarily
       },
     },
   },
@@ -26,6 +26,9 @@ const config = {
       /.*\.spec\.(ts|tsx|js|jsx)$/,
       /.*\.stories\.(ts|tsx|js|jsx)$/,
     ],
+    // Ensure all required file extensions are resolved
+    sourceExts: ['js', 'jsx', 'ts', 'tsx', 'json'],
+    assetExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ttf', 'otf', 'woff', 'woff2'],
   },
 };
 

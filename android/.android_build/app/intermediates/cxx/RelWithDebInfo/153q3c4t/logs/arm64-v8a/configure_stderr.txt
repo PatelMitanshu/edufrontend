@@ -1,0 +1,70 @@
+CMake Error at C:/react_native/educationapp/appfrontend/android/.android_build/app/generated/autolinking/src/main/jni/Android-autolinking.cmake:9 (add_subdirectory):
+  add_subdirectory given source
+  "C:/react_native/educationapp/appfrontend/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/"
+  which is not an existing directory.
+Call Stack (most recent call first):
+  C:/react_native/educationapp/appfrontend/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:94 (include)
+  CMakeLists.txt:31 (include)
+
+
+CMake Error at C:/react_native/educationapp/appfrontend/android/.android_build/app/generated/autolinking/src/main/jni/Android-autolinking.cmake:10 (add_subdirectory):
+  add_subdirectory given source
+  "C:/react_native/educationapp/appfrontend/node_modules/@react-native-community/datetimepicker/android/build/generated/source/codegen/jni/"
+  which is not an existing directory.
+Call Stack (most recent call first):
+  C:/react_native/educationapp/appfrontend/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:94 (include)
+  CMakeLists.txt:31 (include)
+
+
+CMake Error at C:/react_native/educationapp/appfrontend/android/.android_build/app/generated/autolinking/src/main/jni/Android-autolinking.cmake:11 (add_subdirectory):
+  add_subdirectory given source
+  "C:/react_native/educationapp/appfrontend/node_modules/@react-native-documents/picker/android/build/generated/source/codegen/jni/"
+  which is not an existing directory.
+Call Stack (most recent call first):
+  C:/react_native/educationapp/appfrontend/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:94 (include)
+  CMakeLists.txt:31 (include)
+
+
+CMake Error at C:/react_native/educationapp/appfrontend/android/.android_build/app/generated/autolinking/src/main/jni/Android-autolinking.cmake:12 (add_subdirectory):
+  add_subdirectory given source
+  "C:/react_native/educationapp/appfrontend/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/"
+  which is not an existing directory.
+Call Stack (most recent call first):
+  C:/react_native/educationapp/appfrontend/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:94 (include)
+  CMakeLists.txt:31 (include)
+
+
+CMake Error at C:/react_native/educationapp/appfrontend/android/.android_build/app/generated/autolinking/src/main/jni/Android-autolinking.cmake:13 (add_subdirectory):
+  add_subdirectory given source
+  "C:/react_native/educationapp/appfrontend/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/"
+  which is not an existing directory.
+Call Stack (most recent call first):
+  C:/react_native/educationapp/appfrontend/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:94 (include)
+  CMakeLists.txt:31 (include)
+
+
+CMake Error at C:/react_native/educationapp/appfrontend/android/.android_build/app/generated/autolinking/src/main/jni/Android-autolinking.cmake:18 (add_subdirectory):
+  add_subdirectory given source
+  "C:/react_native/educationapp/appfrontend/node_modules/react-native-vector-icons/android/build/generated/source/codegen/jni/"
+  which is not an existing directory.
+Call Stack (most recent call first):
+  C:/react_native/educationapp/appfrontend/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:94 (include)
+  CMakeLists.txt:31 (include)
+
+
+CMake Error at C:/react_native/educationapp/appfrontend/android/.android_build/app/generated/autolinking/src/main/jni/Android-autolinking.cmake:20 (add_subdirectory):
+  add_subdirectory given source
+  "C:/react_native/educationapp/appfrontend/node_modules/react-native-webview/android/build/generated/source/codegen/jni/"
+  which is not an existing directory.
+Call Stack (most recent call first):
+  C:/react_native/educationapp/appfrontend/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:94 (include)
+  CMakeLists.txt:31 (include)
+
+
+CMake Error at C:/react_native/educationapp/appfrontend/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:97 (target_link_libraries):
+  Cannot specify link libraries for target "react_codegen_rnasyncstorage"
+  which is not built by this project.
+Call Stack (most recent call first):
+  CMakeLists.txt:31 (include)
+
+

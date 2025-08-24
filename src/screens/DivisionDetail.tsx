@@ -20,7 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
 import { tw } from '../utils/tailwind';
 import LoadingScreen from '../components/LoadingScreen';
-import { Student, studentService } from '../services/studentService';
+import { Student, studentService, CreateStudentData } from '../services/studentService';
 import { RootStackParamList } from '../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pick, types } from '@react-native-documents/picker';
@@ -449,9 +449,7 @@ export default function DivisionDetail({ route, navigation }: Props) {
         processExcelFile(file);
       }
     } catch (error: any) {
-      if (error.message !== 'User canceled document picker') {
-        Alert.alert('Error', 'Failed to pick Excel file');
-      }
+      Alert.alert('Excel Import Error', `Error: ${error.message}\n\nIf this persists, please contact support.`);
     }
   };
 
@@ -491,8 +489,8 @@ export default function DivisionDetail({ route, navigation }: Props) {
       }
       
       // Process students data
-      const studentsData = [];
-      const errors = [];
+      const studentsData: CreateStudentData[] = [];
+      const errors: string[] = [];
       
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -523,6 +521,38 @@ export default function DivisionDetail({ route, navigation }: Props) {
       
       if (studentsData.length === 0) {
         Alert.alert('Error', 'No valid student data found in the Excel file');
+        return;
+      }
+      
+      // Check for duplicate UIDs in the Excel data
+      const uidCounts: { [key: string]: number } = {};
+      const duplicateUIDs: string[] = [];
+      
+      studentsData.forEach((student, index) => {
+        if (student.uid) {
+          if (!uidCounts[student.uid]) {
+            uidCounts[student.uid] = 0;
+          }
+          uidCounts[student.uid]++;
+          
+          if (uidCounts[student.uid] === 2) {
+            duplicateUIDs.push(student.uid);
+          }
+        }
+      });
+      
+      if (duplicateUIDs.length > 0) {
+        const duplicateDetails = duplicateUIDs.map(uid => {
+          const studentsWithUID = studentsData
+            .map((student, index) => ({ ...student, rowIndex: index }))
+            .filter(student => student.uid === uid);
+          return `UID "${uid}": Found in ${studentsWithUID.length} rows (${studentsWithUID.map(s => s.name).join(', ')})`;
+        });
+        
+        Alert.alert(
+          'Duplicate UIDs Found',
+          `The following UIDs appear multiple times in your Excel file:\n\n${duplicateDetails.slice(0, 3).join('\n')}${duplicateDetails.length > 3 ? '\n...and more' : ''}\n\nPlease fix these duplicates and try again.`
+        );
         return;
       }
       
@@ -579,7 +609,7 @@ export default function DivisionDetail({ route, navigation }: Props) {
     return columnMap;
   };
 
-  const parseStudentRow = (row: any[], columnMap: any, rowNumber: number) => {
+  const parseStudentRow = (row: any[], columnMap: any, rowNumber: number): CreateStudentData => {
     // Required fields validation
     const rawName = row[columnMap.name];
     const rawUid = row[columnMap.uid];
@@ -729,7 +759,7 @@ export default function DivisionDetail({ route, navigation }: Props) {
     };
   };
 
-  const importStudentsBatch = async (studentsData: any[]) => {
+  const importStudentsBatch = async (studentsData: CreateStudentData[]) => {
     try {
       // Generate temporary IDs for preview
       const studentsWithIds = studentsData.map((student, index) => ({

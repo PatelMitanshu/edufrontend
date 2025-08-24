@@ -75,6 +75,38 @@ const StudentImportPreview: React.FC = () => {
           onPress: async () => {
             setIsLoading(true);
             try {
+              // Check for duplicates within the import batch
+              const uidCounts: { [key: string]: string[] } = {};
+              const duplicateUIDs: string[] = [];
+              
+              students.forEach(student => {
+                if (student.uid) {
+                  if (!uidCounts[student.uid]) {
+                    uidCounts[student.uid] = [];
+                  }
+                  uidCounts[student.uid].push(student.name);
+                  
+                  if (uidCounts[student.uid].length > 1) {
+                    duplicateUIDs.push(student.uid);
+                  }
+                }
+              });
+              
+              // If duplicates found, show warning
+              if (duplicateUIDs.length > 0) {
+                setIsLoading(false);
+                const duplicateMessages = duplicateUIDs.map(uid => 
+                  `UID "${uid}": ${uidCounts[uid].join(', ')}`
+                );
+                
+                Alert.alert(
+                  'Duplicate UIDs Found',
+                  `The following UIDs appear multiple times in your import data:\n\n${duplicateMessages.join('\n')}\n\nPlease fix these duplicates in your Excel file and try again.`,
+                  [{ text: 'OK' }]
+                );
+                return;
+              }
+
               let successCount = 0;
               let errorCount = 0;
               const errors: string[] = [];
