@@ -125,6 +125,25 @@ function StudentProfile({ route, navigation }: Props) {
     }
   };
 
+  const formatDOB = (dob?: string) => {
+    if (!dob) return '';
+    const ymd = /^\d{4}-\d{2}-\d{2}$/; // yyyy-mm-dd
+    const dmy = /^\d{1,2}-\d{1,2}-\d{4}$/; // dd-mm-yyyy
+    if (ymd.test(dob)) {
+      const [y, m, d] = dob.split('-');
+      return `${d}-${m}-${y}`;
+    }
+    if (dmy.test(dob)) return dob;
+    const parsed = new Date(dob);
+    if (!isNaN(parsed.getTime())) {
+      const day = parsed.getDate().toString().padStart(2, '0');
+      const month = (parsed.getMonth() + 1).toString().padStart(2, '0');
+      const year = parsed.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+    return dob;
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     loadStudentData();
@@ -326,7 +345,8 @@ function StudentProfile({ route, navigation }: Props) {
       setEditedStudent({
         name: student?.name || '',
         rollNumber: student?.rollNumber || '',
-        uid: student?.uid || '',
+  uid: student?.uid || '',
+  dateOfBirth: formatDOB(student?.dateOfBirth) || '',
         parentContact: {
           phone: student?.parentContact?.phone || '',
           email: student?.parentContact?.email || ''
@@ -357,6 +377,41 @@ function StudentProfile({ route, navigation }: Props) {
       
       if (editedStudent.parentContact !== undefined) {
         updateData.parentContact = editedStudent.parentContact;
+      }
+
+      // Handle dateOfBirth: accept dd-mm-yyyy or yyyy-mm-dd or ISO and convert to ISO yyyy-mm-dd
+      if (editedStudent.dateOfBirth !== undefined) {
+        const raw = (editedStudent.dateOfBirth || '').toString().trim();
+        if (raw.length === 0) {
+          updateData.dateOfBirth = undefined;
+        } else {
+          // dd-mm-yyyy
+          const dmy = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
+          const ymd = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
+          if (dmy.test(raw)) {
+            const m = raw.match(dmy)!;
+            const day = m[1].padStart(2, '0');
+            const month = m[2].padStart(2, '0');
+            const year = m[3];
+            updateData.dateOfBirth = `${year}-${month}-${day}`;
+          } else if (ymd.test(raw)) {
+            const m = raw.match(ymd)!;
+            const year = m[1];
+            const month = m[2].padStart(2, '0');
+            const day = m[3].padStart(2, '0');
+            updateData.dateOfBirth = `${year}-${month}-${day}`;
+          } else {
+            const parsed = new Date(raw);
+            if (isNaN(parsed.getTime())) {
+              Alert.alert('Invalid Date', 'Please enter date of birth in dd-mm-yyyy format');
+              return;
+            }
+            const yy = parsed.getFullYear();
+            const mm = (parsed.getMonth() + 1).toString().padStart(2, '0');
+            const dd = parsed.getDate().toString().padStart(2, '0');
+            updateData.dateOfBirth = `${yy}-${mm}-${dd}`;
+          }
+        }
       }
       
       // Don't send empty update
@@ -636,6 +691,28 @@ function StudentProfile({ route, navigation }: Props) {
                     placeholder="UID"
                     placeholderTextColor={theme.colors.textMuted}
                   />
+                  <TextInput
+                    style={[
+                      tw['text-base'], 
+                      tw['px-4'], 
+                      tw['py-3'], 
+                      tw['border'], 
+                      tw['rounded-xl'],
+                      { 
+                        color: theme.colors.text,
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border,
+                        borderWidth: 1.5,
+                        fontSize: 16,
+                        minHeight: 45,
+                        width: '100%'
+                      }
+                    ]}
+                    value={editedStudent.dateOfBirth || ''}
+                    onChangeText={(text) => updateField('dateOfBirth', text)}
+                    placeholder="Date of Birth (dd-mm-yyyy)"
+                    placeholderTextColor={theme.colors.textMuted}
+                  />
                 </>
               ) : (
                 <>
@@ -645,7 +722,16 @@ function StudentProfile({ route, navigation }: Props) {
                     <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>Roll No: {student.rollNumber}</Text>
                   )}
                   {student.uid && (
-                    <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>UID: {student.uid}</Text>
+                    <Text
+                      numberOfLines={1}
+                      ellipsizeMode="middle"
+                      style={[tw['text-sm'], { color: theme.colors.textSecondary }]}
+                    >
+                      UID: {student.uid}
+                    </Text>
+                  )}
+                  {student.dateOfBirth && (
+                    <Text style={[tw['text-sm'], { color: theme.colors.textSecondary }]}>DOB: {formatDOB(student.dateOfBirth)}</Text>
                   )}
                 </>
               )}
