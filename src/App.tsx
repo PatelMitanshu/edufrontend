@@ -70,6 +70,9 @@ import StudentImportPreview from './screens/StudentImportPreview';
 import SplashScreen from './components/SplashScreen';
 import LoadingScreen from './components/LoadingScreen';
 import CustomDrawerContent from './components/CustomDrawerContent';
+import UpdateNotification from './components/UpdateNotification';
+import { VersionCheckService, AppVersionInfo, UpdateHandlers } from './services/versionCheckService';
+import { DownloadProgress } from './services/inAppDownloadService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -103,6 +106,14 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Login');
+  
+  // Update notification state
+  const [updateInfo, setUpdateInfo] = useState<AppVersionInfo | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [forceUpdateBlocking, setForceUpdateBlocking] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     // Initialize app and check for existing auth token
@@ -118,16 +129,109 @@ function App() {
         } else {
           setInitialRoute('Login');
         }
+        
+        // Check for app updates after authentication check
+        await checkForUpdates();
+        
       } catch (error) {
-        // Error during app initialization - use defaults
+        console.log('Error initializing app:', error);
         setInitialRoute('Login');
       } finally {
         setIsLoading(false);
+        setShowSplash(false);
       }
     };
 
     initializeApp();
   }, []);
+  
+  // Check for app updates
+  const checkForUpdates = async () => {
+    try {
+      const shouldCheck = await VersionCheckService.shouldCheckVersion();
+      if (!shouldCheck) return;
+      
+      const versionInfo = await VersionCheckService.checkForUpdates();
+      if (!versionInfo) return;
+      
+      const comparison = VersionCheckService.compareVersions(
+        versionInfo.currentVersion,
+        versionInfo.latestVersion
+      );
+      
+      if (comparison < 0) {
+        setUpdateInfo(versionInfo);
+        setShowUpdateModal(true);
+        
+        // If force update is required, block the app
+        if (versionInfo.forceUpdate) {
+          setForceUpdateBlocking(true);
+        }
+      }
+    } catch (error) {
+      console.log('Error checking for updates:', error);
+    }
+  };
+  
+  // Handle update action
+  const handleUpdate = async () => {
+    if (!updateInfo) return;
+    
+    const handlers: UpdateHandlers = {
+      onDownloadStart: () => {
+        console.log('📥 Download started');
+        setIsDownloading(true);
+        setDownloadProgress(null);
+      },
+      onProgress: (progress) => {
+        console.log(`📊 Download progress: ${progress.percent}%`);
+        setDownloadProgress(progress);
+      },
+      onDownloadComplete: () => {
+        console.log('✅ Download completed');
+        setIsDownloading(false);
+        setIsUpdating(true);
+      },
+      onInstallStart: () => {
+        console.log('📦 Installation started');
+        setIsUpdating(true);
+      },
+      onError: (error) => {
+        console.log('❌ Update error:', error);
+        setIsDownloading(false);
+        setIsUpdating(false);
+        setDownloadProgress(null);
+      }
+    };
+
+    try {
+      const success = await VersionCheckService.handleUpdateWithDownload(
+        updateInfo.downloadUrl || '',
+        updateInfo.latestVersion,
+        handlers
+      );
+      
+      if (success) {
+        setShowUpdateModal(false);
+      }
+    } catch (error) {
+      console.log('Error handling update:', error);
+      handlers.onError?.('Update failed');
+    }
+  };
+  
+  // Handle skip update
+  const handleSkipUpdate = async () => {
+    if (!updateInfo) return;
+    
+    await VersionCheckService.skipVersion(updateInfo.latestVersion);
+    setShowUpdateModal(false);
+  };
+  
+  // Handle remind later
+  const handleRemindLater = () => {
+    setShowUpdateModal(false);
+  };
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -263,6 +367,23 @@ function App() {
             />
           </Stack.Navigator>
         </NavigationContainer>
+        
+        {/* Update Notification Modal */}
+        {updateInfo && (
+          <UpdateNotification
+            visible={showUpdateModal}
+            currentVersion={updateInfo.currentVersion}
+            latestVersion={updateInfo.latestVersion}
+            updateMessage={updateInfo.updateMessage || 'A new version is available!'}
+            forceUpdate={updateInfo.forceUpdate}
+            onUpdate={handleUpdate}
+            onSkip={updateInfo.forceUpdate ? undefined : handleSkipUpdate}
+            onRemindLater={updateInfo.forceUpdate ? undefined : handleRemindLater}
+            isUpdating={isUpdating}
+            downloadProgress={downloadProgress}
+            isDownloading={isDownloading}
+          />
+        )}
       </SafeAreaView>
     </ThemeProvider>
   );

@@ -7,7 +7,6 @@ import {
   Alert,
   PanResponder,
   Animated,
-  Image,
   LayoutAnimation,
   UIManager,
   Platform,
@@ -25,6 +24,7 @@ import { RootStackParamList } from '../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pick, types } from '@react-native-documents/picker';
 import * as XLSX from 'xlsx';
+import { LazyImage } from '../components/LazyImage';
 
 interface DraggableStudentCardProps {
   student: Student;
@@ -257,15 +257,20 @@ const DraggableStudentCard: React.FC<DraggableStudentCardProps> = ({
             tw['items-center'], 
             tw['justify-center'], 
             tw['mr-4'],
+            tw['overflow-hidden'],
             { backgroundColor: theme.colors.primary }
           ]}
           activeOpacity={0.7}
         >
           {student.profilePicture?.url ? (
-            <Image
-              source={{ uri: student.profilePicture.url }}
+            <LazyImage
+              uri={student.profilePicture.url}
+              fallback={
+                <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
+                  {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </Text>
+              }
               style={[tw['w-12'], tw['h-12'], tw['rounded-full']]}
-              resizeMode="cover"
             />
           ) : (
             <Text style={[tw['text-base'], tw['font-bold'], { color: theme.colors.surface }]}>
@@ -1393,6 +1398,10 @@ export default function DivisionDetail({ route, navigation }: Props) {
           extraData={[draggedStudentId, students.length, students, globalIsDragging]}
           nestedScrollEnabled={true}
           keyboardShouldPersistTaps="handled"
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={10}
+          updateCellsBatchingPeriod={100}
         />
       )}
 
