@@ -1,9 +1,19 @@
+# React Native .gitignore
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# React Native packager cache
+metro-cache/
+.metro-health-check*
+
 # OSX
-#
 .DS_Store
 
 # Xcode
-#
 build/
 *.pbxuser
 !default.pbxuser
@@ -20,12 +30,10 @@ DerivedData
 *.hmap
 *.ipa
 *.xcuserstate
-**/.xcode.env.local
+project.xcworkspace
 
 # Android/IntelliJ
-#
 build/
-.idea
 .gradle
 local.properties
 *.iml
@@ -33,43 +41,86 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
-.kotlin/
 
-# node.js
-#
-node_modules/
-npm-debug.log
-yarn-error.log
+# Android build artifacts
+android/.gradle/
+android/app/.cxx/
+android/app/build/
+android/build/
+android/.android_build/
+android/app/outputs/
+android/app/intermediates/
+*.apk
+*.ap_
+*.aab
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
-# screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/
+# Keystores
+*.keystore
+!debug.keystore
 
-**/fastlane/report.xml
-**/fastlane/Preview.html
-**/fastlane/screenshots
-**/fastlane/test_output
-
-# Bundle artifact
+# Bundle artifacts
 *.jsbundle
 
-# Ruby / CocoaPods
-**/Pods/
-/vendor/bundle/
+# CocoaPods
+/ios/Pods/
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
 
-# testing
-/coverage
+# Testing
+coverage/
 
-# Yarn
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
+# Flipper
+ios/Podfile.lock
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# Watchman
+.watchmanconfig
+
+# Temporary folders
+tmp/
+temp/
+
+# Buck
+buck-out/
+\.buckd/
+*.keystore
