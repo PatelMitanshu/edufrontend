@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ubarcloan"
-    android:versionCode="5"
-    android:versionName="1.4" >
+    android:versionCode="6"
+    android:versionName="1.5.0" >
 
     <uses-sdk
         android:minSdkVersion="24"
@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <queries>
         <intent>
@@ -36,6 +37,7 @@
         android:protectionLevel="signature" />
 
     <uses-permission android:name="com.ubarcloan.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE" />
 
     <application
         android:name="com.ubarcloan.MainApplication"

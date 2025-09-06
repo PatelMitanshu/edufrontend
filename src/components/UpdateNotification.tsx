@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { tw } from '../utils/tailwind';
-import { DownloadProgress } from '../services/inAppDownloadService';
+import { DownloadProgress } from '../services/inAppUpdateService';
 
 interface UpdateNotificationProps {
   visible: boolean;
@@ -130,7 +130,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                     <ProgressBarAndroid
                       styleAttr="Horizontal"
                       indeterminate={false}
-                      progress={downloadProgress.percent / 100}
+                      progress={downloadProgress.progressPercent / 100}
                       color={theme.colors.primary}
                       style={styles.progressBar}
                     />
@@ -141,7 +141,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                           styles.progressBarIOSFill, 
                           { 
                             backgroundColor: theme.colors.primary,
-                            width: `${downloadProgress.percent}%`
+                            width: `${downloadProgress.progressPercent}%`
                           }
                         ]} 
                       />
@@ -152,7 +152,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                 {/* Progress Text */}
                 <View style={styles.progressTextContainer}>
                   <Text style={[styles.progressText, { color: theme.colors.textSecondary }]}>
-                    {downloadProgress.percent}% completed
+                    {Math.round(downloadProgress.progressPercent)}% completed
                   </Text>
                   <Text style={[styles.progressText, { color: theme.colors.textSecondary }]}>
                     {formatFileSize(downloadProgress.bytesWritten)} / {formatFileSize(downloadProgress.contentLength)}

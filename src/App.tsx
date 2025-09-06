@@ -72,7 +72,7 @@ import LoadingScreen from './components/LoadingScreen';
 import CustomDrawerContent from './components/CustomDrawerContent';
 import UpdateNotification from './components/UpdateNotification';
 import { VersionCheckService, AppVersionInfo, UpdateHandlers } from './services/versionCheckService';
-import { DownloadProgress } from './services/inAppDownloadService';
+// import { DownloadProgress } from './services/inAppDownloadService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -112,7 +112,7 @@ function App() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [forceUpdateBlocking, setForceUpdateBlocking] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<any>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
@@ -184,8 +184,8 @@ function App() {
         setDownloadProgress(null);
       },
       onProgress: (progress) => {
-        console.log(`📊 Download progress: ${progress.percent}%`);
-        setDownloadProgress(progress);
+        console.log(`📊 Download progress: ${Math.round(progress.progressPercent)}%`);
+        setDownloadProgress(progress as any);
       },
       onDownloadComplete: () => {
         console.log('✅ Download completed');
@@ -242,16 +242,16 @@ function App() {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
-  // Show loading screen while initializing
-  if (isLoading) {
-    return <LoadingScreen message="Initializing EduLearn..." />;
-  }
-
   return (
     <ThemeProvider>
       <SafeAreaView style={{ flex: 1 }}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        <NavigationContainer>
+        
+        {/* Show loading screen while initializing */}
+        {isLoading ? (
+          <LoadingScreen message="Initializing EduLearn..." />
+        ) : (
+          <NavigationContainer>
           <Stack.Navigator initialRouteName={initialRoute}>
             <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
             <Stack.Screen name="Register" component={Register} options={{ headerShown: false }} />
@@ -367,6 +367,7 @@ function App() {
             />
           </Stack.Navigator>
         </NavigationContainer>
+        )}
         
         {/* Update Notification Modal */}
         {updateInfo && (

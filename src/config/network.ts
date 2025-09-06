@@ -2,12 +2,12 @@
 // This file helps you quickly switch between different API endpoints
 
 // Your computer's current IP addresses:
-// WiFi Network: 192.168.1.4 (Main network - use this if device is on same WiFi)
+// WiFi Network: 192.168.1.6 (Main network - use this if device is on same WiFi)
 // Hotspot/Tethering: 192.168.137.1 (Use this if device connects via hotspot/USB tethering)
 
 export const API_ENDPOINTS = {
   // For physical devices on the same WiFi network
-  PHYSICAL_DEVICE_WIFI: 'http://192.168.1.4:3000',
+  PHYSICAL_DEVICE_WIFI: 'http://192.168.1.6:3000',
   
   // For physical devices connected via hotspot/USB tethering  
   PHYSICAL_DEVICE_HOTSPOT: 'http://192.168.137.1:3000',

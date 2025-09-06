@@ -25,6 +25,7 @@ import { studentService, Student } from '../services/studentService';
 import { uploadService, Upload } from '../services/uploadService';
 import { studentMCQService } from '../services/studentMCQService';
 import FileViewer from '../components/FileViewer';
+import { LazyImage } from '../components/LazyImage';
 import { useTheme } from '../contexts/ThemeContext';
 import { tw } from '../utils/tailwind';
 
@@ -591,10 +592,16 @@ function StudentProfile({ route, navigation }: Props) {
               {profileImageUploading ? (
                 <ActivityIndicator size="small" color={theme.colors.surface} />
               ) : student.profilePicture?.url ? (
-                <Image
-                  source={{ uri: student.profilePicture.url }}
+                <LazyImage
+                  uri={student.profilePicture.url}
                   style={[tw['w-16'], tw['h-16'], tw['rounded-full']]}
-                  resizeMode="cover"
+                  width={64}
+                  height={64}
+                  fallback={
+                    <Text style={[tw['text-xl'], tw['font-bold'], { color: theme.colors.surface }]}>
+                      {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </Text>
+                  }
                 />
               ) : (
                 <Text style={[tw['text-xl'], tw['font-bold'], { color: theme.colors.surface }]}>

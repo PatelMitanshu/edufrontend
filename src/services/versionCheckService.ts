@@ -2,7 +2,7 @@ import { CURRENT_API_ENDPOINT } from '../config/network';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Linking, Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
-import { InAppDownloadService, DownloadProgress } from './inAppDownloadService';
+import { downloadAndInstallApk, DownloadProgress } from './inAppUpdateService';
 
 export interface AppVersionInfo {
   currentVersion: string;
@@ -185,11 +185,11 @@ export class VersionCheckService {
       handlers?.onDownloadStart?.();
 
       // Download APK with progress tracking
-      const downloadResult = await InAppDownloadService.downloadAndInstallApk(
+      const downloadResult = await downloadAndInstallApk({
         downloadUrl,
         version,
-        handlers?.onProgress
-      );
+        onProgress: handlers?.onProgress
+      });
 
       if (downloadResult) {
         handlers?.onDownloadComplete?.();
