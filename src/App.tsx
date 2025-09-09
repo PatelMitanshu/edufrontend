@@ -34,6 +34,7 @@ export type RootStackParamList = {
   };
   AddUpload: { studentId: string };
   AddStandard: undefined;
+  CheckUpdate: undefined;
   StudentImportPreview: {
     students: any[];
     divisionName: string;
@@ -46,6 +47,7 @@ export type DrawerParamList = {
   Profile: undefined;
   Settings: undefined;
   About: undefined;
+  CheckUpdate: undefined;
 };
 import Home from './screens/Home';
 import Login from './screens/Login';
@@ -67,6 +69,7 @@ import AddStudent from './screens/AddStudent';
 import AddUpload from './screens/AddUpload';
 import AddStandard from './screens/AddStandard';
 import StudentImportPreview from './screens/StudentImportPreview';
+import CheckUpdate from './screens/CheckUpdate';
 import SplashScreen from './components/SplashScreen';
 import LoadingScreen from './components/LoadingScreen';
 import CustomDrawerContent from './components/CustomDrawerContent';
@@ -97,6 +100,7 @@ function DrawerNavigator() {
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="Settings" component={Settings} />
       <Drawer.Screen name="About" component={About} />
+      <Drawer.Screen name="CheckUpdate" component={CheckUpdate} />
     </Drawer.Navigator>
   );
 }
