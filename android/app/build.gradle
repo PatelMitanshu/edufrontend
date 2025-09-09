@@ -87,7 +87,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion 33  // Use Android 13 for compatibility
         versionCode 6
-        versionName "1.8.0"
+        versionName "1.9.0"
     }
     signingConfigs {
         debug {
