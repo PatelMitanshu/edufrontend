@@ -1,10 +1,51 @@
 import RNFS from 'react-native-fs';
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, Linking, Platform, NativeModules } from 'react-native';
 
 export interface DownloadProgress {
 	progressPercent: number;
 	bytesWritten: number;
 	contentLength: number;
+}
+
+// Helper function to open APK file for installation
+async function openApkFile(filePath: string): Promise<boolean> {
+	try {
+		// For Android, use content:// URI scheme for better compatibility
+		const fileUri = Platform.OS === 'android' ? 
+			`content://com.android.externalstorage.documents/document/primary:${encodeURIComponent('Download/' + filePath.split('/').pop())}` :
+			`file://${filePath}`;
+		
+		console.log('Attempting to open APK:', fileUri);
+		
+		// First try with content URI
+		if (Platform.OS === 'android') {
+			try {
+				// Try to open with file:// scheme first (more reliable)
+				const directFileUri = `file://${filePath}`;
+				await Linking.openURL(directFileUri);
+				return true;
+			} catch (error) {
+				console.log('Direct file URI failed, trying alternative method:', error);
+				
+				// Fallback: Guide user to manual installation
+				Alert.alert(
+					'Install Update',
+					`Download completed! Please install the update manually:\n\n1. Open your Downloads folder\n2. Find "${filePath.split('/').pop()}"\n3. Tap to install\n\nMake sure "Install unknown apps" is enabled for your file manager.`,
+					[
+						{ text: 'Open Downloads', onPress: () => Linking.openURL('content://com.android.externalstorage.documents/document/primary:Download') },
+						{ text: 'Open Settings', onPress: () => openInstallSettings() },
+						{ text: 'OK', style: 'default' }
+					]
+				);
+				return false;
+			}
+		}
+		
+		return false;
+	} catch (error) {
+		console.error('Error opening APK file:', error);
+		return false;
+	}
 }
 
 export async function downloadAndInstallApk({
@@ -52,11 +93,27 @@ export async function downloadAndInstallApk({
 		const result = await download.promise;
 		if (result.statusCode === 200) {
 			Alert.alert(
-				'Download Complete',
-				`Update v${version} downloaded successfully!\n\nFile saved to: Downloads/${fileName}\n\nPlease tap "Install" when the installation screen appears.`,
+				'Download Complete! 📱',
+				`Update v${version} downloaded successfully!\n\n🔧 Installation Steps:\n1. Tap "Install Now" below\n2. Enable "Install unknown apps" if prompted\n3. Follow the installation prompts\n\n📁 File location: Downloads/${fileName}`,
 				[
-					{ text: 'Cancel', style: 'cancel' },
-					{ text: 'Install Now', onPress: () => installApk(downloadPath) },
+					{ text: 'Later', style: 'cancel' },
+					{ 
+						text: 'Install Now', 
+						onPress: async () => {
+							await installApk(downloadPath);
+							// Show additional help after installation attempt
+							setTimeout(() => {
+								Alert.alert(
+									'Installation Help',
+									'If installation didn\'t start:\n\n1. Go to Settings > Apps > Special access > Install unknown apps\n2. Find this app and enable "Allow from this source"\n3. Try installation again',
+									[
+										{ text: 'Open Settings', onPress: () => openInstallSettings() },
+										{ text: 'OK' }
+									]
+								);
+							}, 2000);
+						}
+					},
 				]
 			);
 			return true;
@@ -76,45 +133,61 @@ export async function downloadAndInstallApk({
 	}
 }
 
-async function installApk(filePath: string): Promise<void> {
+async function installApk(filePath: string): Promise<boolean> {
 	try {
-		const canInstall = await canInstallApps();
-		if (!canInstall) {
-			Alert.alert(
-				'Installation Permission Required',
-				'Enable "Install unknown apps" permission for this app.',
-				[
-					{ text: 'Cancel', style: 'cancel' },
-					{ text: 'Open Settings', onPress: () => openInstallSettings() },
-				]
-			);
-			return;
+		console.log('Starting APK installation for:', filePath);
+		
+		// Check if file exists
+		const fileExists = await RNFS.exists(filePath);
+		if (!fileExists) {
+			Alert.alert('Error', 'APK file not found. Please download again.');
+			return false;
 		}
-		const fileUri = `file://${filePath}`;
-		const canOpen = await Linking.canOpenURL(fileUri);
-		if (canOpen) {
-			await Linking.openURL(fileUri);
-		} else {
-			Alert.alert(
-				'Manual Installation Required',
-				`Please manually install the APK from:\n${filePath}`,
-				[{ text: 'OK' }]
-			);
-		}
+		
+		// Show pre-installation guidance
+		Alert.alert(
+			'Enable Installation Permission',
+			'To install the update, please:\n\n1️⃣ Tap "Open Settings" below\n2️⃣ Look for "Install unknown apps" or "Special app access"\n3️⃣ Find "EduLearn" in the list\n4️⃣ Enable "Allow from this source"\n5️⃣ Return to the app and try again\n\n📱 If you don\'t see the option, look for "Security" or "Privacy" settings.',
+			[
+				{ text: 'Cancel', style: 'cancel' },
+				{ 
+					text: 'Open Settings', 
+					onPress: async () => {
+						await openInstallSettings();
+						// Give user some time to enable permission
+						setTimeout(async () => {
+							const opened = await openApkFile(filePath);
+							if (!opened) {
+								showManualInstallGuide(filePath);
+							}
+						}, 3000);
+					}
+				}
+			]
+		);
+		return true;
 	} catch (error) {
+		console.error('Installation error:', error);
 		Alert.alert(
 			'Installation Error',
-			'Could not start installation. Install the downloaded APK manually.',
-			[{ text: 'OK' }]
+			'Could not start installation. Please install the downloaded APK manually from your Downloads folder.',
+			[
+				{ text: 'Open Downloads', onPress: () => openDownloadsFolder() },
+				{ text: 'OK' }
+			]
 		);
+		return false;
 	}
 }
 
 export async function canInstallApps(): Promise<boolean> {
 	if (Platform.OS !== 'android') return false;
 	try {
+		// For Android 8.0 and above, we need special permission
 		if (Platform.Version >= 26) {
-			return false;
+			// We can't directly check this permission, so we'll return true
+			// and let the installation attempt handle the permission request
+			return true;
 		}
 		return true;
 	} catch {
@@ -122,8 +195,81 @@ export async function canInstallApps(): Promise<boolean> {
 	}
 }
 
-export function openInstallSettings(): void {
+export async function openInstallSettings(): Promise<void> {
 	if (Platform.OS === 'android') {
-		Linking.openSettings();
+		try {
+			// Try to open the specific "Install unknown apps" settings page
+			const canOpenUnknownApps = await Linking.canOpenURL('android.settings.MANAGE_UNKNOWN_APP_SOURCES');
+			if (canOpenUnknownApps) {
+				await Linking.openURL('android.settings.MANAGE_UNKNOWN_APP_SOURCES');
+				return;
+			}
+
+			// Fallback 1: Try to open with package name
+			const packageName = NativeModules.PlatformConstants?.PackageName || 'com.ubarcloan';
+			const packageSpecificUrl = `android.settings.MANAGE_UNKNOWN_APP_SOURCES?package=${packageName}`;
+			const canOpenPackageSpecific = await Linking.canOpenURL(packageSpecificUrl);
+			if (canOpenPackageSpecific) {
+				await Linking.openURL(packageSpecificUrl);
+				return;
+			}
+
+			// Fallback 2: Open general security settings
+			const securityUrl = 'android.settings.SECURITY_SETTINGS';
+			const canOpenSecurity = await Linking.canOpenURL(securityUrl);
+			if (canOpenSecurity) {
+				await Linking.openURL(securityUrl);
+				return;
+			}
+
+			// Final fallback: general app settings
+			Linking.openSettings();
+		} catch (error) {
+			console.error('Error opening install settings:', error);
+			// Final fallback to general app settings
+			Linking.openSettings();
+		}
 	}
+}
+
+// Helper function to open Downloads folder
+function openDownloadsFolder(): void {
+	try {
+		// Try to open Downloads folder directly
+		Linking.openURL('content://com.android.externalstorage.documents/document/primary:Download');
+	} catch (error) {
+		// Fallback to file manager
+		try {
+			Linking.openURL('content://com.android.documentsui/.MainActivity');
+		} catch (fallbackError) {
+			Alert.alert('Info', 'Please open your file manager and navigate to the Downloads folder.');
+		}
+	}
+}
+
+// Helper function to show manual installation guide
+function showManualInstallGuide(filePath: string): void {
+	const fileName = filePath.split('/').pop() || 'app-update.apk';
+	Alert.alert(
+		'Manual Installation Guide 📱',
+		`Installation Steps:\n\n📁 STEP 1: Find the APK\n• File location: Downloads folder\n• File name: ${fileName}\n\n⚙️ STEP 2: Enable Permission\n• Settings → Apps → Special access\n• Find "Install unknown apps"\n• Enable for "EduLearn"\n\n📱 STEP 3: Install\n• Open Downloads folder\n• Tap the APK file\n• Follow installation prompts\n\n💡 Note: The permission might be under "Security" or "Privacy" settings on some devices.`,
+		[
+			{ text: 'Open Downloads', onPress: () => openDownloadsFolder() },
+			{ text: 'Open Settings', onPress: () => openInstallSettings() },
+			{ text: 'Got it!' }
+		]
+	);
+}
+
+// Helper function to show installation help
+function showInstallationHelp(): void {
+	Alert.alert(
+		'Installation Help 📱',
+		'Step-by-step guide:\n\n1️⃣ Download completed in Downloads folder\n\n2️⃣ Open Downloads & find the APK file\n\n3️⃣ Tap the APK file to start installation\n\n4️⃣ If blocked:\n   • Tap "Settings" button\n   • Enable "Allow from this source"\n   • Return and tap "Install"\n\n5️⃣ Complete the installation process',
+		[
+			{ text: 'Open Settings', onPress: () => openInstallSettings() },
+			{ text: 'Open Downloads', onPress: () => openDownloadsFolder() },
+			{ text: 'Got it!' }
+		]
+	);
 }

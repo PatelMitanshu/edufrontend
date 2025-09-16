@@ -9,6 +9,7 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
+  Linking,
 } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -18,6 +19,7 @@ import { tw } from '../utils/tailwind';
 import { VersionCheckService, AppVersionInfo, UpdateHandlers } from '../services/versionCheckService';
 import { DownloadProgress } from '../services/inAppUpdateService';
 import UpdateNotification from '../components/UpdateNotification';
+import { showInstallPermissionGuide } from '../utils/installPermissionGuide';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CheckUpdate'>;
 
@@ -95,8 +97,8 @@ function CheckUpdate({ navigation }: Props) {
     } catch (error) {
       console.error('Error checking for updates:', error);
       Alert.alert(
-        'Error',
-        'An error occurred while checking for updates. Please try again later.',
+        'Update Check Error',
+        'An error occurred while checking for updates. Please try again later.\n\nIf this persists, check your network connection.',
         [{ text: 'OK' }]
       );
     } finally {
@@ -322,6 +324,78 @@ function CheckUpdate({ navigation }: Props) {
             • Manual checks help ensure you have the latest version{'\n'}
             • Updates are downloaded securely from the official source
           </Text>
+        </View>
+
+        {/* Installation Guide Card */}
+        <View style={[tw['mx-6'], tw['mb-6'], tw['p-6'], tw['rounded-xl'], tw['shadow-lg'], { backgroundColor: theme.colors.surface }]}>
+          <View style={[tw['flex-row'], tw['items-center'], tw['mb-4']]}>
+            <Text style={[tw['text-xl'], tw['mr-3']]}>📱</Text>
+            <Text style={[tw['text-lg'], tw['font-bold'], { color: theme.colors.text }]}>
+              Installation Guide
+            </Text>
+          </View>
+          
+          <View style={[tw['space-y-3']]}>
+            <View style={[tw['flex-row'], tw['items-center']]}>
+              <Text style={[tw['text-sm'], tw['font-bold'], tw['mr-2'], { color: theme.colors.primary }]}>1.</Text>
+              <Text style={[tw['text-sm'], tw['leading-5'], tw['flex-1'], { color: theme.colors.textSecondary }]}>
+                When update downloads, tap "Install Now"
+              </Text>
+            </View>
+            
+            <View style={[tw['flex-row'], tw['items-center']]}>
+              <Text style={[tw['text-sm'], tw['font-bold'], tw['mr-2'], { color: theme.colors.primary }]}>2.</Text>
+              <Text style={[tw['text-sm'], tw['leading-5'], tw['flex-1'], { color: theme.colors.textSecondary }]}>
+                If blocked, tap "Settings" → Enable "Allow from this source"
+              </Text>
+            </View>
+            
+            <View style={[tw['flex-row'], tw['items-center']]}>
+              <Text style={[tw['text-sm'], tw['font-bold'], tw['mr-2'], { color: theme.colors.primary }]}>3.</Text>
+              <Text style={[tw['text-sm'], tw['leading-5'], tw['flex-1'], { color: theme.colors.textSecondary }]}>
+                Return and tap "Install" to complete the update
+              </Text>
+            </View>
+          </View>
+          
+          <TouchableOpacity
+            style={[tw['mt-4'], tw['p-3'], tw['rounded-lg'], tw['border'], { borderColor: theme.colors.primary }]}
+            onPress={showInstallPermissionGuide}
+          >
+            <Text style={[tw['text-center'], tw['text-sm'], tw['font-bold'], { color: theme.colors.primary }]}>
+              🔧 Enable Install Permission
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[tw['mt-2'], tw['p-3'], tw['rounded-lg'], tw['border'], { borderColor: theme.colors.textSecondary }]}
+            onPress={() => {
+              Alert.alert(
+                'Installation Help 📱',
+                'Need help with installation?\n\n' +
+                '🔧 Enable "Install unknown apps":\n' +
+                '   Settings → Apps → Special access → Install unknown apps → Find EduLearn → Enable\n\n' +
+                '📁 Manual installation:\n' +
+                '   Downloads folder → Find APK file → Tap to install\n\n' +
+                '❓ Still having issues?\n' +
+                '   Check device storage space and try again',
+                [
+                  { text: 'Open Settings', onPress: () => {
+                    try {
+                      Linking.openURL('android.settings.MANAGE_UNKNOWN_APP_SOURCES');
+                    } catch (error) {
+                      Linking.openSettings();
+                    }
+                  }},
+                  { text: 'OK' }
+                ]
+              );
+            }}
+          >
+            <Text style={[tw['text-center'], tw['text-sm'], tw['font-bold'], { color: theme.colors.textSecondary }]}>
+              📋 Show Detailed Help
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 

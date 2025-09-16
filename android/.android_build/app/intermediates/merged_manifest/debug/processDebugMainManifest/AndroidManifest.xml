@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ubarcloan"
     android:versionCode="6"
-    android:versionName="1.7.0" >
+    android:versionName="1.9.0" >
 
     <uses-sdk
         android:minSdkVersion="24"
