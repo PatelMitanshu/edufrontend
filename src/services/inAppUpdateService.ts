@@ -92,6 +92,43 @@ export async function downloadAndInstallApk({
 		});
 		const result = await download.promise;
 		if (result.statusCode === 200) {
+			// Validate that we actually downloaded an APK file, not HTML
+			const fileExists = await RNFS.exists(downloadPath);
+			if (!fileExists) {
+				throw new Error('Downloaded file not found');
+			}
+
+			// Check file size - APK should be at least 1MB, HTML pages are usually much smaller
+			const fileStat = await RNFS.stat(downloadPath);
+			if (fileStat.size < 1024 * 1024) { // Less than 1MB
+				Alert.alert(
+					'Download Error',
+					'The downloaded file appears to be invalid. This usually means:\n\n• The download URL is incorrect\n• The APK file is not available\n• Network connectivity issues\n\nPlease contact support or try again later.',
+					[{ text: 'OK' }]
+				);
+				// Clean up invalid file
+				await RNFS.unlink(downloadPath);
+				return false;
+			}
+
+			// Check if file starts with APK signature (optional additional validation)
+			try {
+				const fileHeader = await RNFS.read(downloadPath, 4, 0, 'base64');
+				// APK files start with "PK" (ZIP signature) - base64 encoded should start with "UEs"
+				if (!fileHeader.startsWith('UEs')) {
+					Alert.alert(
+						'Invalid File Format',
+						'The downloaded file is not a valid APK package. This usually means the download URL is pointing to a web page instead of the APK file.\n\nPlease contact the app developer to fix the download link.',
+						[{ text: 'OK' }]
+					);
+					await RNFS.unlink(downloadPath);
+					return false;
+				}
+			} catch (headerCheckError) {
+				console.warn('Could not validate APK header:', headerCheckError);
+				// Continue anyway if header check fails
+			}
+
 			Alert.alert(
 				'Download Complete! 📱',
 				`Update v${version} downloaded successfully!\n\n🔧 Installation Steps:\n1. Tap "Install Now" below\n2. Enable "Install unknown apps" if prompted\n3. Follow the installation prompts\n\n📁 File location: Downloads/${fileName}`,
