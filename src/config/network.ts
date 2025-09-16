@@ -26,7 +26,7 @@ export const API_ENDPOINTS = {
 };
 
 // Current active endpoint - Try WIFI first, if it doesn't work, try HOTSPOT
-export const CURRENT_API_ENDPOINT = API_ENDPOINTS.PRODUCTION;
+export const CURRENT_API_ENDPOINT = API_ENDPOINTS.PHYSICAL_DEVICE_WIFI;
 // Helper function to detect platform and return appropriate endpoint
 export const getOptimalEndpoint = () => {
   // You can add logic here to automatically detect the best endpoint

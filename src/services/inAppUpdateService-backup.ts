@@ -43,10 +43,10 @@ async function requestInstallPermission(): Promise<boolean> {
 	}
 }
 
-// FIXED: Improved APK installation that works around file:// URI restrictions
+// Improved APK installation with FileProvider support for Android 7.0+
 async function installApkWithIntent(filePath: string): Promise<void> {
 	try {
-		console.log('Installing APK with secure approach:', filePath);
+		console.log('Installing APK with Android Intent:', filePath);
 		
 		// Make sure file exists and is accessible
 		const fileExists = await RNFS.exists(filePath);
@@ -60,54 +60,160 @@ async function installApkWithIntent(filePath: string): Promise<void> {
 			throw new Error('APK file appears to be corrupted');
 		}
 
-		// For modern Android (7.0+ API 24+), we always use manual installation
-		// This avoids the file:// URI security restrictions completely
-		const fileName = filePath.split('/').pop() || 'update.apk';
-		
-		Alert.alert(
-			'📱 Ready to Install Update',
-			`Update downloaded successfully!\n\n📁 File: ${fileName}\n📂 Location: Downloads folder\n\n🔒 For security, Android requires manual installation:\n\n⚡ Steps:\n1️⃣ Tap "Open Downloads" below\n2️⃣ Find and tap the APK file\n3️⃣ Grant "Install unknown apps" permission\n4️⃣ Tap "Install" and wait\n\n✅ This is the standard secure process.`,
-			[
-				{ text: 'Later', style: 'cancel' },
-				{ 
-					text: 'Open Downloads', 
-					onPress: () => {
-						openDownloadsFolder();
-						// Show step-by-step guidance
-						setTimeout(() => {
-							Alert.alert(
-								'📋 Installation Steps',
-								`Look for: ${fileName}\n\n1️⃣ Tap the APK file\n2️⃣ If prompted "Install unknown apps":\n   • Tap "Settings"\n   • Enable "Allow from this source"\n   • Return and tap "Install"\n3️⃣ Tap "Install" on the package installer\n4️⃣ Wait for "App installed" message\n5️⃣ Tap "Open" to launch updated app`,
-								[
-									{ text: 'Need Permissions?', onPress: () => openInstallSettings() },
-									{ text: 'Got it!' }
-								]
-							);
-						}, 2000);
-					}
-				},
-				{ 
-					text: 'Enable Permissions First', 
-					onPress: () => {
-						openInstallSettings();
-						setTimeout(() => {
-							Alert.alert(
-								'After Enabling Permissions',
-								'Once you\'ve enabled "Install unknown apps":\n\n1. Return to this app\n2. Try the update again\n3. Or manually install from Downloads folder',
-								[
-									{ text: 'Open Downloads', onPress: () => openDownloadsFolder() },
-									{ text: 'OK' }
-								]
-							);
-						}, 1000);
-					}
-				}
-			]
-		);
+		// For Android 7.0+ (API 24+), we need to use a different approach
+		// due to file:// URI restrictions
+		if (Platform.OS === 'android' && Platform.Version >= 24) {
+			// Use manual installation guide for Android 7.0+
+			console.log('Android 7.0+ detected, showing manual installation guide');
+			showEnhancedManualInstallation(filePath);
+			return;
+		}
+
+		// For older Android versions, try direct file URI (legacy support)
+		try {
+			const fileUri = `file://${filePath}`;
+			await Linking.openURL(fileUri);
+			console.log('Installation intent launched successfully (legacy method)');
+			
+			// Show user what to expect during installation
+			showInstallationProgress();
+			
+		} catch (intentError) {
+			console.error('Direct intent failed:', intentError);
+			
+			// Always fall back to manual installation guide
+			showEnhancedManualInstallation(filePath);
+		}
 		
 	} catch (error) {
 		console.error('APK installation error:', error);
 		throw error;
+	}
+}
+
+// Enhanced manual installation guide for modern Android versions
+function showEnhancedManualInstallation(filePath: string): void {
+	const fileName = filePath.split('/').pop() || 'update.apk';
+	
+	Alert.alert(
+		'📱 Install Update',
+		`Your update is ready to install!\n\n🔹 Due to Android security restrictions, please install manually:\n\n📁 File: ${fileName}\n📂 Location: Downloads folder\n\n⚡ Quick Steps:\n1️⃣ Tap "Open Downloads" below\n2️⃣ Find and tap the APK file\n3️⃣ Enable "Install unknown apps" if prompted\n4️⃣ Tap "Install" and wait for completion\n\n🛡️ This is normal for Android 7.0+ security.`,
+		[
+			{ text: 'Cancel', style: 'cancel' },
+			{ 
+				text: 'Open Downloads', 
+				onPress: () => {
+					openDownloadsFolder();
+					// Show additional guidance after opening downloads
+					setTimeout(() => {
+						Alert.alert(
+							'📋 Installation Guide',
+							`Look for: ${fileName}\n\n✅ Tap the APK file\n✅ Enable permissions if asked\n✅ Follow installation prompts\n✅ Tap "Install" when ready\n\n💡 If you don't see install options, check Settings → Security → Install unknown apps`,
+							[
+								{ text: 'Need Settings?', onPress: () => openInstallSettings() },
+								{ text: 'Got it!' }
+							]
+						);
+					}, 2000);
+				}
+			},
+			{ 
+				text: 'Enable Permissions', 
+				onPress: () => openInstallSettings() 
+			}
+		]
+	);
+}
+
+// Show installation progress for successful direct installations
+function showInstallationProgress(): void {
+	setTimeout(() => {
+		Alert.alert(
+			'Installation in Progress',
+			'The Android installer should now be running. Please:\n\n✅ Tap "Install" when prompted\n✅ Wait for installation to complete\n✅ Tap "Open" or "Done" when finished\n\n⏱️ This may take 30-60 seconds depending on your device.',
+			[
+				{ text: 'OK' },
+				{ 
+					text: 'Need Help?', 
+					onPress: () => showInstallationHelp() 
+				}
+			]
+		);
+	}, 1000);
+	
+	// Set a timeout to check if installation might be stuck
+	setTimeout(() => {
+		Alert.alert(
+			'Installation Taking Too Long?',
+			'If the installation seems stuck:\n\n🔄 Close the installer and try again\n⚙️ Check your device settings\n📱 Make sure you have enough storage space\n\nWould you like help troubleshooting?',
+			[
+				{ text: 'I\'ll Wait', style: 'cancel' },
+				{ 
+					text: 'Get Help', 
+					onPress: () => showInstallationTroubleshooting() 
+				}
+			]
+		);
+	}, 45000); // Show after 45 seconds
+			
+		} catch (intentError) {
+			console.error('Direct intent failed:', intentError);
+			
+			// Fallback: Show manual installation guide
+			const fileName = filePath.split('/').pop() || 'update.apk';
+			Alert.alert(
+				'Manual Installation Required',
+				`Automatic installation failed. Please install manually:\n\n📁 Location: Downloads/${fileName}\n\n📱 Steps:\n1. Open Downloads folder\n2. Tap the APK file\n3. Enable "Unknown sources" if prompted\n4. Follow installation prompts\n\n⚠️ If you don't see the install option, check your device's security settings.`,
+				[
+					{ text: 'Open Downloads', onPress: () => openDownloadsFolder() },
+					{ text: 'Open Settings', onPress: () => openInstallSettings() },
+					{ text: 'OK' }
+				]
+			);
+		}
+		
+	} catch (error) {
+		console.error('APK installation error:', error);
+		throw error;
+	}
+}
+
+// Helper function to open APK file for installation
+async function openApkFile(filePath: string): Promise<boolean> {
+	try {
+		// For Android, use content:// URI scheme for better compatibility
+		const fileUri = Platform.OS === 'android' ? 
+			`content://com.android.externalstorage.documents/document/primary:${encodeURIComponent('Download/' + filePath.split('/').pop())}` :
+			`file://${filePath}`;
+		
+		// First try with content URI
+		if (Platform.OS === 'android') {
+			try {
+				// Try to open with file:// scheme first (more reliable)
+				const directFileUri = `file://${filePath}`;
+				await Linking.openURL(directFileUri);
+				return true;
+			} catch (error) {
+				console.log('Direct file URI failed, trying alternative method:', error);
+				
+				// Fallback: Guide user to manual installation
+				Alert.alert(
+					'Install Update',
+					`Download completed! Please install the update manually:\n\n1. Open your Downloads folder\n2. Find "${filePath.split('/').pop()}"\n3. Tap to install\n\nMake sure "Install unknown apps" is enabled for your file manager.`,
+					[
+						{ text: 'Open Downloads', onPress: () => Linking.openURL('content://com.android.externalstorage.documents/document/primary:Download') },
+						{ text: 'Open Settings', onPress: () => openInstallSettings() },
+						{ text: 'OK', style: 'default' }
+					]
+				);
+				return false;
+			}
+		}
+		
+		return false;
+	} catch (error) {
+		console.error('Error opening APK file:', error);
+		return false;
 	}
 }
 
@@ -207,8 +313,30 @@ export async function downloadAndInstallApk({
 				// Continue anyway if header check fails
 			}
 
-			// FIXED: Use the new secure installation process
-			await installApkWithIntent(downloadPath);
+			Alert.alert(
+				'Download Complete! 📱',
+				`Update v${version} downloaded successfully!\n\n🔧 Installation Steps:\n1. Tap "Install Now" below\n2. Enable "Install unknown apps" if prompted\n3. Follow the installation prompts\n\n📁 File location: Downloads/${fileName}`,
+				[
+					{ text: 'Later', style: 'cancel' },
+					{ 
+						text: 'Install Now', 
+						onPress: async () => {
+							await installApk(downloadPath);
+							// Show additional help after installation attempt
+							setTimeout(() => {
+								Alert.alert(
+									'Installation Help',
+									'If installation didn\'t start:\n\n1. Go to Settings > Apps > Special access > Install unknown apps\n2. Find this app and enable "Allow from this source"\n3. Try installation again',
+									[
+										{ text: 'Open Settings', onPress: () => openInstallSettings() },
+										{ text: 'OK' }
+									]
+								);
+							}, 2000);
+						}
+					},
+				]
+			);
 			return true;
 		}
 		throw new Error(`Download failed with status: ${result.statusCode}`);
@@ -327,6 +455,20 @@ function openDownloadsFolder(): void {
 			Alert.alert('Info', 'Please open your file manager and navigate to the Downloads folder.');
 		}
 	}
+}
+
+// Helper function to show manual installation guide
+function showManualInstallGuide(filePath: string): void {
+	const fileName = filePath.split('/').pop() || 'app-update.apk';
+	Alert.alert(
+		'Manual Installation Guide 📱',
+		`Installation Steps:\n\n📁 STEP 1: Find the APK\n• File location: Downloads folder\n• File name: ${fileName}\n\n⚙️ STEP 2: Enable Permission\n• Settings → Apps → Special access\n• Find "Install unknown apps"\n• Enable for "EduLearn"\n\n📱 STEP 3: Install\n• Open Downloads folder\n• Tap the APK file\n• Follow installation prompts\n\n💡 Note: The permission might be under "Security" or "Privacy" settings on some devices.`,
+		[
+			{ text: 'Open Downloads', onPress: () => openDownloadsFolder() },
+			{ text: 'Open Settings', onPress: () => openInstallSettings() },
+			{ text: 'Got it!' }
+		]
+	);
 }
 
 // Helper function to show installation help
